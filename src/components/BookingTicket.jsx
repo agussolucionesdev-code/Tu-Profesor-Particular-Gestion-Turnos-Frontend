@@ -17,7 +17,7 @@ import {
 } from "react-icons/fa";
 
 const BookingTicket = ({ booking, onEdit, onCancel, onDelete }) => {
-  // --- 1. LÓGICA DE FECHAS Y HORARIOS (RANGO) ---
+  // --- 1. LÃ“GICA DE FECHAS Y HORARIOS (RANGO) ---
   const dateObj = new Date(booking.timeSlot);
 
   // Calcular hora fin
@@ -48,7 +48,7 @@ const BookingTicket = ({ booking, onEdit, onCancel, onDelete }) => {
         month: "long",
         year: "numeric",
       })
-    : "Fecha inválida";
+    : "Fecha invÃ¡lida";
 
   // --- 2. ICONOS DE ESTADO ---
   const getStatusIcon = (status) => {
@@ -64,7 +64,7 @@ const BookingTicket = ({ booking, onEdit, onCancel, onDelete }) => {
     }
   };
 
-  // Lógica: ¿Es Mayor de Edad?
+  // LÃ³gica: Â¿Es Mayor de Edad?
   const isAdultStudent =
     booking.responsibleName === "Mayor de edad / Responsable";
 
@@ -154,7 +154,7 @@ const BookingTicket = ({ booking, onEdit, onCancel, onDelete }) => {
               </div>
 
               <div className="contact-item">
-                {/* Teléfono Fijo con Verde WhatsApp */}
+                {/* TelÃ©fono Fijo con Verde WhatsApp */}
                 <FaWhatsapp style={{ color: "#25D366", fontSize: "1.1em" }} />
                 11-6423-6675
               </div>
@@ -191,7 +191,7 @@ const BookingTicket = ({ booking, onEdit, onCancel, onDelete }) => {
           </>
         )}
 
-        {/* Botón eliminar manual (Por si falla el automático o historial viejo) */}
+        {/* BotÃ³n eliminar manual (Por si falla el automÃ¡tico o historial viejo) */}
         {booking.status === "Cancelado" && (
           <button
             onClick={() => onDelete(booking._id)}

@@ -1,6 +1,6 @@
 /* ==========================================================================
    BOOKING FORM v52.0 - NEURO-UX & SILICON VALLEY DESIGN
-   Animación Flexbox de desaparición fluida (Cero Saltos, Cero Fricción).
+   AnimaciÃ³n Flexbox de desapariciÃ³n fluida (Cero Saltos, Cero FricciÃ³n).
    ========================================================================== */
 
 :root {
@@ -91,7 +91,7 @@
 }
 
 /* =========================================
-     TÍTULO NEURO-MARKETING
+     TÃTULO NEURO-MARKETING
      ========================================= */
 .form-header-neuro {
   text-align: center;
@@ -427,7 +427,7 @@
 }
 
 /* =========================================
-     NUEVA LÓGICA DE GRILLA FLEXIBLE (ANIMACIÓN MAGISTRAL)
+     NUEVA LÃ“GICA DE GRILLA FLEXIBLE (ANIMACIÃ“N MAGISTRAL)
      ========================================= */
 .form-flex-adult {
   display: flex;
@@ -526,7 +526,7 @@
 .neuro-toggle-animator.is-hidden {
   max-width: 0;
   opacity: 0;
-  margin-left: -1.5rem; /* Cancela matemáticamente el 'gap' del padre */
+  margin-left: -1.5rem; /* Cancela matemÃ¡ticamente el 'gap' del padre */
   pointer-events: none;
 }
 
@@ -912,7 +912,7 @@
 }
 
 /* =========================================
-     CHIP DE DESELECCIÓN
+     CHIP DE DESELECCIÃ“N
      ========================================= */
 .minimal-chip-wrapper {
   height: 0;
@@ -1192,7 +1192,7 @@
 }
 
 /* =========================================
-     HORARIOS PANORÁMICOS
+     HORARIOS PANORÃMICOS
      ========================================= */
 .calendar-glass-box.panoramic {
   width: 100%;
@@ -1320,7 +1320,7 @@
 }
 
 /* =========================================
-     BOTONES ESTÁTICOS INFERIORES Y FALSO DISABLED
+     BOTONES ESTÃTICOS INFERIORES Y FALSO DISABLED
      ========================================= */
 .step-actions {
   display: flex;
@@ -1421,7 +1421,7 @@
 }
 
 /* =========================================
-     CONFIRMACIÓN Y TICKET
+     CONFIRMACIÃ“N Y TICKET
      ========================================= */
 .duration-selector {
   text-align: center;
@@ -1858,7 +1858,7 @@ textarea:focus-visible {
 
 .neuro-input-wrapper.error::after,
 .neuro-textarea-wrapper.error::after {
-  content: "×";
+  content: "Ã—";
   position: absolute;
   right: 16px;
   color: var(--error-color);
@@ -2141,7 +2141,7 @@ textarea:focus-visible {
     box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.05);
   }
 
-  /* En móvil todo en 1 columna, incluyendo la animación flex */
+  /* En mÃ³vil todo en 1 columna, incluyendo la animaciÃ³n flex */
   .form-grid-2 {
     grid-template-columns: 1fr;
     gap: 0;

@@ -1,11 +1,11 @@
 :root {
-  /* --- Paleta de Marca Agustín Sosa --- */
+  /* --- Paleta de Marca AgustÃ­n Sosa --- */
 
-  /* Azul Noche (Base Sólida y Autoridad) */
+  /* Azul Noche (Base SÃ³lida y Autoridad) */
   --color-primary: #1b263b;
   --color-primary-dark: #0d1b2a;
 
-  /* Verde Éxito (Check, Estrellas y Acciones) */
+  /* Verde Ã‰xito (Check, Estrellas y Acciones) */
   --color-accent: #4caf50;
   --color-accent-hover: #43a047;
 
@@ -15,7 +15,7 @@
   --color-text-muted: #6b7280;
   --color-white: #ffffff;
 
-  /* --- Efectos y Sombras (La "Base Sólida") --- */
+  /* --- Efectos y Sombras (La "Base SÃ³lida") --- */
   --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-solid: 0px 10px 0px 0px var(--color-primary-dark); /* Efecto 3D sutil */
@@ -56,7 +56,7 @@ html[data-theme="dark"] {
 body {
   margin: 0;
   padding: 0;
-  font-family: "Inter", system-ui, -apple-system, sans-serif; /* Tipografía moderna y limpia */
+  font-family: "Inter", system-ui, -apple-system, sans-serif; /* TipografÃ­a moderna y limpia */
   background-color: var(--color-bg-light);
   color: var(--color-text-main);
   -webkit-font-smoothing: antialiased;

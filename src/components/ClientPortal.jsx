@@ -33,7 +33,7 @@ const ClientPortal = () => {
   const [message, setMessage] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
 
-  // --- ESTADO ALERTAS DINÁMICAS (TOAST) ---
+  // --- ESTADO ALERTAS DINAMICAS (TOAST) ---
   const [toast, setToast] = useState({ show: false, msg: "", type: "" });
 
   const showToast = (msg, type = "success") => {
@@ -45,7 +45,7 @@ const ClientPortal = () => {
   const [editingBooking, setEditingBooking] = useState(null);
   const [cancelingBooking, setCancelingBooking] = useState(null);
 
-  // Datos reprogramación
+  // Datos reprogramacion
   const [newDate, setNewDate] = useState(new Date());
   const [newDuration, setNewDuration] = useState(1);
   const [existingBookingsForBlock, setExistingBookingsForBlock] = useState([]);
@@ -69,11 +69,26 @@ const ClientPortal = () => {
     newDate.getTime() + Number(newDuration || 0) * 60 * 60 * 1000,
   );
 
-  // --- LÓGICA DE FILTRADO ---
+  // --- LOGICA DE FILTRADO ---
   const isBookingActive = (booking) => {
     const endTime = new Date(booking.endTime);
     const now = new Date();
     return endTime > now && booking.status !== "Cancelado";
+  };
+
+  const looksLikeBookingCode = (value) =>
+    /^[A-Z0-9]{6,12}$/i.test(String(value || "").trim());
+
+  const getNotificationFollowUp = (notifications) => {
+    if (notifications?.client?.sent && notifications.client.recipient) {
+      return ` Tambien enviamos el detalle a ${notifications.client.recipient}.`;
+    }
+
+    if (notifications?.client?.recipient) {
+      return " La reserva ya quedo actualizada. Si el correo tarda, vuelve a entrar desde Mis Turnos con tu codigo, email o WhatsApp.";
+    }
+
+    return " Puedes volver a encontrarla desde Mis Turnos con tu codigo, email o WhatsApp.";
   };
 
   // --- 1. BUSCAR ---
@@ -84,13 +99,16 @@ const ClientPortal = () => {
       return;
     }
 
+    const trimmedCode = code.trim();
+    const searchedByCode = looksLikeBookingCode(trimmedCode);
+
     setLoading(true);
     setMessage("");
     setBookingsList([]);
     setHasSearched(true);
 
     try {
-      const res = await axios.get(`${API_URL}/api/bookings/${code}`);
+      const res = await axios.get(`${API_URL}/api/bookings/${trimmedCode}`);
       let results = [];
       if (res.data && Array.isArray(res.data.data)) {
         results = res.data.data;
@@ -103,25 +121,27 @@ const ClientPortal = () => {
 
       if (results.length > 0 && activeResults.length === 0) {
         setMessage(
-          "Encontramos historial, pero no hay turnos activos para gestionar.",
+          searchedByCode
+            ? "Ese codigo existe, pero hoy no tiene un turno activo para gestionar."
+            : "Encontramos historial, pero no hay turnos activos para gestionar.",
         );
       } else if (activeResults.length === 0) {
         setMessage(
-          "No encontramos reservas activas con ese dato. Revisa que este escrito igual al comprobante.",
+          "No encontramos reservas activas con ese dato. Prueba con el codigo exacto o con el email/WhatsApp cargados al reservar.",
         );
       }
     } catch (error) {
       console.error(error);
       setMessage(
         error.response?.data?.message ||
-          "No encontramos reservas. Proba con tu codigo, email o WhatsApp.",
+          "No encontramos reservas. Prueba con tu codigo, email o WhatsApp.",
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // --- 2. PREPARAR EDICIÓN ---
+  // --- 2. PREPARAR EDICION ---
   const startEdit = (booking) => {
     setEditingBooking(booking);
     setNewDate(new Date(booking.timeSlot));
@@ -135,7 +155,13 @@ const ClientPortal = () => {
         );
         setExistingBookingsForBlock(active);
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error(error);
+        showToast(
+          "No pude actualizar la disponibilidad. Igual puedes volver a intentar desde Mis Turnos.",
+          "warning",
+        );
+      });
   };
 
   // --- 3. HELPER HORARIOS ---
@@ -179,27 +205,30 @@ const ClientPortal = () => {
     const year = newDate.getFullYear();
     const hours = String(newDate.getHours()).padStart(2, "0");
     const minutes = String(newDate.getMinutes()).padStart(2, "0");
-    const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
+      const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
 
     try {
-      await axios.post(`${API_URL}/api/bookings/reschedule`, {
+      const response = await axios.post(`${API_URL}/api/bookings/reschedule`, {
         bookingCode: editingBooking.bookingCode,
         newTimeSlot: formattedDate,
         newDuration: durationNumber,
       });
 
       showToast(
-        "Turno reprogramado con exito. Ya actualizamos tu tarjeta.",
+        `Turno reprogramado con exito.${getNotificationFollowUp(response.data.notifications)}`,
         "success",
       );
       setEditingBooking(null);
       handleSearch();
-    } catch {
-      showToast("No se pudo reprogramar el turno.", "error");
+    } catch (error) {
+      showToast(
+        error.response?.data?.message || "No se pudo reprogramar el turno.",
+        "error",
+      );
     }
   };
 
-  // --- 5. CANCELAR (LÓGICA SUAVE Y AUTOMÁTICA) ---
+  // --- 5. CANCELAR (LOGICA SUAVE Y AUTOMATICA) ---
   const openCancelModal = (bookingCode) => {
     const bookingToCancel = bookingsList.find(
       (b) => b.bookingCode === bookingCode
@@ -213,40 +242,62 @@ const ClientPortal = () => {
     const codeToCancel = cancelingBooking.bookingCode;
 
     try {
-      await axios.post(`${API_URL}/api/bookings/cancel`, {
+      const response = await axios.post(`${API_URL}/api/bookings/cancel`, {
         bookingCode: codeToCancel,
       });
 
-      // 1. Cerrar Modal inmediatamente
       setCancelingBooking(null);
-
-      // 2. Feedback Visual Inmediato: Cambiamos estado a 'Cancelado' localmente
-      // Esto hace que la tarjeta se ponga roja al instante.
       setBookingsList((prev) =>
         prev.map((b) =>
           b.bookingCode === codeToCancel ? { ...b, status: "Cancelado" } : b
         )
       );
-
-      // 3. Mostrar Toast Informativo
       showToast(
-        "Turno cancelado. Queda marcado en rojo para que puedas revisarlo.",
+        `Turno cancelado.${getNotificationFollowUp(response.data.notifications)}`,
         "success",
       );
 
     } catch (error) {
       console.error(error);
-      showToast("Error al cancelar el turno.", "error");
+      showToast(
+        error.response?.data?.message || "Error al cancelar el turno.",
+        "error",
+      );
     }
   };
 
   // --- 6. ELIMINAR MANUAL ---
   const handleDeleteForever = (id) => {
     setBookingsList((prev) => prev.filter((b) => b._id !== id));
-    showToast("Registro ocultado de tu vista.", "success");
+    showToast(
+      "Registro ocultado de tu vista. Si lo necesitas, puedes volver a buscarlo con el codigo, email o WhatsApp.",
+      "success",
+    );
   };
 
   const maxTime = setHours(setMinutes(new Date(), 0), 22);
+  const activeVisibleBookings = bookingsList.filter(isBookingActive);
+  const cancelledVisibleBookings = bookingsList.filter(
+    (booking) => booking.status === "Cancelado",
+  );
+  const portalToastMeta = {
+    success: {
+      icon: <FaCheckCircle />,
+      title: "Movimiento confirmado",
+    },
+    warning: {
+      icon: <FaExclamationTriangle />,
+      title: "Atencion",
+    },
+    error: {
+      icon: <FaTimesCircle />,
+      title: "No pude completarlo",
+    },
+    info: {
+      icon: <FaInfoCircle />,
+      title: "Informacion util",
+    },
+  }[toast.type || "info"];
 
   return (
     <div className="client-portal-wrapper">
@@ -258,33 +309,57 @@ const ClientPortal = () => {
           aria-live="polite"
           aria-atomic="true"
         >
-          {toast.type === "success" ? <FaCheckCircle /> : <FaTimesCircle />}
-          <span>{toast.msg}</span>
+          <div className={`portal-toast-icon ${toast.type || "info"}`}>
+            {portalToastMeta.icon}
+          </div>
+          <div className="portal-toast-copy">
+            <strong>{portalToastMeta.title}</strong>
+            <span>{toast.msg}</span>
+          </div>
         </div>
       )}
 
       <div className="portal-container">
         <div className="portal-header">
           <h1 className="portal-title">Mis Turnos</h1>
-          <p className="portal-subtitle">Gestiona tus clases próximas.</p>
+          <p className="portal-subtitle">Gestiona tus clases proximas.</p>
           <div className="header-decoration"></div>
         </div>
 
         <div className="portal-guidance" aria-label="Como gestionar tus turnos">
           <div className="guidance-card">
             <FaSearch />
-            <strong>Busca sin vueltas</strong>
-            <span>Usa tu codigo, email o WhatsApp.</span>
+            <strong>Empieza por el codigo</strong>
+            <span>Si lo tienes, pegalο tal cual aparece en tu comprobante.</span>
           </div>
           <div className="guidance-card">
             <FaCalendarAlt />
-            <strong>Revisa el turno</strong>
-            <span>Vas a ver fecha, horario, materia y contacto.</span>
+            <strong>Tambien sirve tu contacto</strong>
+            <span>Si no tienes el codigo a mano, usa email o WhatsApp.</span>
           </div>
           <div className="guidance-card">
             <FaWhatsapp />
-            <strong>Tenelo a mano</strong>
-            <span>WhatsApp sirve como contacto rapido si necesitas ayuda.</span>
+            <strong>Gestiona sin vueltas</strong>
+            <span>Desde aqui puedes revisar, reprogramar o cancelar.</span>
+          </div>
+        </div>
+
+        <div className="portal-management-alert" role="note">
+          <div className="portal-management-icon">
+            <FaInfoCircle />
+          </div>
+          <div className="portal-management-copy">
+            <strong>Tu codigo vive en Mis Turnos</strong>
+            <p>
+              Si tienes el codigo de reserva, pegalo tal cual aparece en el
+              comprobante. Si no, tambien puedes usar el email o el WhatsApp
+              que cargaste al reservar.
+            </p>
+            <div className="search-method-pills">
+              <span>Codigo de reserva</span>
+              <span>Email cargado</span>
+              <span>WhatsApp cargado</span>
+            </div>
           </div>
         </div>
 
@@ -308,17 +383,27 @@ const ClientPortal = () => {
           </button>
         </form>
         <p id="portal-search-help" className="search-helper">
-          Si reservaste para un menor, podes buscar con el dato de contacto del
-          adulto responsable.
+          Si reservaste para un menor, tambien puedes buscar con el dato de
+          contacto del adulto responsable.
         </p>
 
-        {hasSearched && bookingsList.length > 0 && (
+        {hasSearched && activeVisibleBookings.length > 0 && (
           <div className="portal-results-summary" role="status">
             <FaInfoCircle />
             <span>
-              Encontramos {bookingsList.length} turno
-              {bookingsList.length === 1 ? "" : "s"} activo
-              {bookingsList.length === 1 ? "" : "s"} para gestionar.
+              Encontramos {activeVisibleBookings.length} turno
+              {activeVisibleBookings.length === 1 ? "" : "s"} activo
+              {activeVisibleBookings.length === 1 ? "" : "s"} para gestionar.
+            </span>
+          </div>
+        )}
+
+        {cancelledVisibleBookings.length > 0 && (
+          <div className="portal-history-hint" role="status">
+            <FaInfoCircle />
+            <span>
+              Los turnos cancelados quedan visibles un momento para que puedas
+              revisarlos y despues ocultarlos de tu vista.
             </span>
           </div>
         )}
@@ -338,7 +423,10 @@ const ClientPortal = () => {
                 marginBottom: "1rem",
               }}
             />
-            <p>No hay turnos activos para mostrar.</p>
+            <p>
+              No hay turnos activos para mostrar. Prueba con tu codigo exacto,
+              email o WhatsApp cargados al reservar.
+            </p>
           </div>
         )}
 
@@ -503,7 +591,7 @@ const ClientPortal = () => {
                 onClick={confirmCancel}
                 className="btn-modal danger-confirm"
               >
-                Sí, Cancelar Turno
+                Si, Cancelar Turno
               </button>
             </div>
           </div>

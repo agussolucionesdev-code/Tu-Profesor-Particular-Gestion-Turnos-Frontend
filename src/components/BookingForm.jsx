@@ -235,7 +235,7 @@ const BookingForm = () => {
   }, [formData.timeSlot, existingBookings]);
 
   const isValidField = (field) => {
-    const regexName = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s']{3,60}$/;
+    const regexName = /^[A-Za-zÀ-ÿ\u00f1\u00d1\s']{3,60}$/;
     const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     switch (field) {
       case "studentName":
@@ -316,6 +316,8 @@ const BookingForm = () => {
             : "--:--"
         } hs`
       : "";
+  const confirmationLookupHint =
+    "Despues de confirmar te mostramos un codigo grande para usar en Mis Turnos. Si no lo tienes a mano, tambien puedes entrar con el email o el WhatsApp cargados.";
 
   const getFieldStateClass = (field, isOptional = false) => {
     if (isValidField(field)) return "is-valid";
@@ -378,24 +380,24 @@ const BookingForm = () => {
         "5to grado",
         "6to grado",
       ];
-    if (level === "Secundaria" || level === "Secundaria Técnica")
+    if (level === "Secundaria" || level === "Secundaria Tecnica")
       return [
-        "1er año",
-        "2do año",
-        "3er año",
-        "4to año",
-        "5to año",
-        "6to año",
-        level === "Secundaria Técnica" ? "7mo año" : null,
+        "1er ano",
+        "2do ano",
+        "3er ano",
+        "4to ano",
+        "5to ano",
+        "6to ano",
+        level === "Secundaria Tecnica" ? "7mo ano" : null,
       ].filter(Boolean);
     if (level === "Terciario" || level === "Universitario")
       return [
-        "1er año",
-        "2do año",
-        "3er año",
-        "4to año",
-        "5to año",
-        "6to año",
+        "1er ano",
+        "2do ano",
+        "3er ano",
+        "4to ano",
+        "5to ano",
+        "6to ano",
         "Avanzado",
       ];
     return [];
@@ -405,14 +407,14 @@ const BookingForm = () => {
     if (step === 1 && !canProceedToStep2) {
       setHasAttemptedNext(true);
       showToast(
-        "Faltan algunos datos. Revisá los campos resaltados para continuar. ✍️",
+        "Faltan algunos datos. Revisa los campos resaltados para continuar.",
         "error",
       );
       return false;
     }
     if (step === 2 && !formData.timeSlot) {
       showToast(
-        "Elegí una fecha en el calendario para descubrir los horarios libres. 📅",
+        "Elige una fecha en el calendario para descubrir los horarios libres.",
         "warning",
       );
       return false;
@@ -422,7 +424,7 @@ const BookingForm = () => {
       (!formData.timeSlot || formData.timeSlot.getHours() === 0)
     ) {
       showToast(
-        "Seleccioná el horario que mejor se adapte a vos para continuar. ⏰",
+        "Selecciona el horario que mejor se adapte a vos para continuar.",
         "warning",
       );
       return false;
@@ -438,7 +440,7 @@ const BookingForm = () => {
       smoothScrollToTop();
     } else if (targetStep > currentStep) {
       if (targetStep - currentStep > 1) {
-        showToast("Avanzá paso a paso por favor.", "warning");
+        showToast("Avanza paso a paso, por favor.", "warning");
         return;
       }
       if (validateStep(currentStep)) {
@@ -580,7 +582,7 @@ const BookingForm = () => {
   const handleDurationSelect = (duration) => {
     if (duration > maxAllowedDuration) {
       showToast(
-        `El límite para este turno es ${formatDurationOptionLabel(maxAllowedDuration)}.`,
+        `El limite para este turno es ${formatDurationOptionLabel(maxAllowedDuration)}.`,
         "warning",
       );
       return;
@@ -625,12 +627,37 @@ const BookingForm = () => {
         responsibleName: finalResponsibleName,
         timeSlot: formattedDate,
         duration: Number(formData.duration),
-        tutorName: "Agustín",
+        tutorName: "Agustin",
       });
 
       successSound.play().catch(() => {});
 
       const end = addMinutes(dateObj, Number(formData.duration) * 60);
+      const managementMethods = [
+        {
+          label: "Codigo",
+          value: response.data.data.bookingCode,
+          helper: "Pegalo tal cual en Mis Turnos.",
+        },
+        ...(safeEmail
+          ? [
+              {
+                label: "Email",
+                value: safeEmail,
+                helper: "Tambien te sirve para volver a encontrar la reserva.",
+              },
+            ]
+          : []),
+        ...(formData.phone
+          ? [
+              {
+                label: "WhatsApp",
+                value: formData.phone,
+                helper: "Usa el mismo numero que cargaste al reservar.",
+              },
+            ]
+          : []),
+      ];
       setSuccessData({
         bookingCode: response.data.data.bookingCode,
         day: format(dateObj, "EEEE d 'de' MMMM 'de' yyyy", { locale: es }),
@@ -639,6 +666,12 @@ const BookingForm = () => {
         actualDuration: formData.duration,
         cleanStudentName: formData.studentName,
         email: safeEmail,
+        phone: formData.phone,
+        subject: formData.subject,
+        school: formData.school,
+        educationLevel: `${formData.educationLevel} · ${formData.yearGrade}`,
+        notifications: response.data.notifications || null,
+        managementMethods,
       });
       setShowModal(true);
     } catch (error) {
@@ -663,8 +696,26 @@ const BookingForm = () => {
   };
 
   const whatsappConfirmText = successData
-    ? `Hola Prof. Agustín! Acabo de reservar un turno.\n\n👤 Alumno: ${successData.cleanStudentName}\n📅 Fecha: ${successData.day}\n⏰ Horario: ${successData.startTime} a ${successData.endTime} hs (${successData.actualDuration} hs)\n🎫 Código: ${successData.bookingCode}\n\n¡Gracias!`
+    ? `Hola Prof. Agustin. Acabo de reservar un turno.\n\nAlumno: ${successData.cleanStudentName}\nFecha: ${successData.day}\nHorario: ${successData.startTime} a ${successData.endTime} hs (${successData.actualDuration} hs)\nCodigo: ${successData.bookingCode}\nGestion: despues voy a entrar en Mis Turnos con este codigo.\n\nGracias.`
     : "";
+  const toastMeta = {
+    success: {
+      icon: <FaCheckCircle />,
+      title: "Todo listo",
+    },
+    warning: {
+      icon: <FaExclamationCircle />,
+      title: "Atencion",
+    },
+    error: {
+      icon: <FaTimesCircle />,
+      title: "Revisa esto",
+    },
+    info: {
+      icon: <FaInfoCircle />,
+      title: "Acompanamiento",
+    },
+  }[toast.type || "info"];
 
   return (
     <div className="booking-page-wrapper">
@@ -674,8 +725,13 @@ const BookingForm = () => {
         aria-live="polite"
         aria-atomic="true"
       >
-        {toast.type === "error" ? <FaExclamationCircle /> : <FaInfoCircle />}
-        <span>{toast.message}</span>
+        <div className={`toast-icon-shell ${toast.type || "info"}`}>
+          {toastMeta.icon}
+        </div>
+        <div className="toast-copy">
+          <strong>{toastMeta.title}</strong>
+          <span>{toast.message}</span>
+        </div>
       </div>
 
       <div className="form-card-elevation" ref={formCardRef}>
@@ -686,10 +742,10 @@ const BookingForm = () => {
         </div>
 
         <div className="form-header-neuro">
-          <span className="form-supertitle">SISTEMA DE GESTIÓN DE TURNOS</span>
-          <h2 className="form-main-title">Asegurá tu Clase</h2>
+          <span className="form-supertitle">SISTEMA DE GESTION DE TURNOS</span>
+          <h2 className="form-main-title">Asegura tu Clase</h2>
           <p className="form-subtitle">
-            Completá tus datos y elegí el momento ideal para aprender.
+            Completa tus datos y elige el momento ideal para aprender.
           </p>
           <div className="form-support-strip" aria-label="Beneficios del sistema de reserva">
             {BOOKING_SUPPORT_PILLS.map((pill, index) => {
@@ -790,7 +846,7 @@ const BookingForm = () => {
             style={{ transform: `translateX(-${(currentStep - 1) * 100}%)` }}
           >
             {/* =======================================
-                PASO 1: DATOS (DISEÑO PREMIUM SaaS)
+                PASO 1: DATOS (DISENO PREMIUM SaaS)
                 ======================================= */}
             <div
               ref={(element) => {
@@ -800,7 +856,7 @@ const BookingForm = () => {
             >
               <div className="form-section-block">
                 <h3 className="section-title" tabIndex={-1}>
-                  <FaIdCard /> Información Personal
+                  <FaIdCard /> Informacion Personal
                 </h3>
                 <div className="form-grid-2">
                   <div className="neuro-input-group">
@@ -876,7 +932,7 @@ const BookingForm = () => {
                     <small>
                       {isAdult
                         ? "Mantenemos esta opcion siempre visible para que puedas cambiarla sin perderte."
-                        : "Si el turno es para un menor, pedimos un adulto responsable para acompa�ar el contacto."}
+                        : "Si el turno es para un menor, pedimos un adulto responsable para acompañar el contacto."}
                     </small>
                   </div>
                   <div className="neuro-toggle-animator adult-mode-toggle">
@@ -960,7 +1016,7 @@ const BookingForm = () => {
                         {hasAttemptedNext &&
                           formData.email.trim() !== "" &&
                           !isValidField("email") && (
-                            <span className="error-text">Inválido</span>
+                            <span className="error-text">Invalido</span>
                           )}
                       </div>
                       <div
@@ -1000,7 +1056,7 @@ const BookingForm = () => {
                 <div className="progressive-inner">
                   <hr className="section-divider-soft" />
                   <h3 className="section-title" tabIndex={-1}>
-                    <FaGraduationCap /> Perfil Académico
+                    <FaGraduationCap /> Perfil Academico
                   </h3>
                   <div className="form-grid-2">
                     <div className="neuro-input-group">
@@ -1028,8 +1084,8 @@ const BookingForm = () => {
                           <option value="">Elegi el nivel educativo</option>
                           <option value="Primaria">Primaria</option>
                           <option value="Secundaria">Secundaria</option>
-                          <option value="Secundaria Técnica">
-                            Secundaria Técnica
+                          <option value="Secundaria Tecnica">
+                            Secundaria Tecnica
                           </option>
                           <option value="Terciario">Terciario / Superior</option>
                           <option value="Universitario">Universitario</option>
@@ -1042,7 +1098,7 @@ const BookingForm = () => {
                     <div className="neuro-input-group">
                       <div className="label-row">
                         <label>
-                          Año / Grado <span className="required">*</span>
+                          Ano / Grado <span className="required">*</span>
                         </label>
                         {hasAttemptedNext && !isValidField("yearGrade") && (
                           <span className="error-text">Requerido</span>
@@ -1065,7 +1121,7 @@ const BookingForm = () => {
                             <option value="">Elegi el nivel primero</option>
                           )}
                           {formData.educationLevel && (
-                            <option value="">Elegi curso, año o grado</option>
+                            <option value="">Elegi curso, ano o grado</option>
                           )}
                           {getYearGradeOptions().map((opt) => (
                             <option key={opt} value={opt}>
@@ -1111,7 +1167,7 @@ const BookingForm = () => {
                     <div className="neuro-input-group">
                       <div className="label-row">
                         <label>
-                          Institución / Colegio <span className="required">*</span>
+                          Institucion / Colegio <span className="required">*</span>
                         </label>
                         {hasAttemptedNext && !isValidField("school") && (
                           <span className="error-text">Requerido</span>
@@ -1150,7 +1206,7 @@ const BookingForm = () => {
                   >
                     <div className="label-row">
                       <label>
-                        Situación / Comentarios{" "}
+                        Situacion / Comentarios{" "}
                         <span className="optional">
                           (Opcional pero recomendado)
                         </span>
@@ -1207,6 +1263,7 @@ const BookingForm = () => {
                   <button
                     type="button"
                     className="side-nav-arrow"
+                    aria-label="Volver al paso anterior: Tus Datos"
                     onClick={goToPrev}
                   >
                     <FaChevronLeft />
@@ -1220,7 +1277,7 @@ const BookingForm = () => {
 
                 <div className="calendar-focus-container relative-interaction">
                   <h3 className="section-title center-text" tabIndex={-1}>
-                    <FaCalendarAlt /> Elegí un Día
+                    <FaCalendarAlt /> Elige un Dia
                   </h3>
                   <p className="step-empathy-note">
                     Si estas organizando a un menor, elegi un dia que tambien le
@@ -1262,6 +1319,7 @@ const BookingForm = () => {
                         className="btn-chip-clear"
                         onClick={clearDateSelection}
                         title="Desmarcar"
+                        aria-label="Desmarcar fecha elegida"
                       >
                         <FaTimes /> Desmarcar
                       </button>
@@ -1329,10 +1387,11 @@ const BookingForm = () => {
                   <button
                     type="button"
                     className={`side-nav-arrow ${formData.timeSlot ? "ready" : "locked"}`}
+                    aria-label="Avanzar al paso siguiente: Tu Horario"
                     onClick={() => {
                       if (!formData.timeSlot) {
                         showToast(
-                          "Elegí una fecha en el calendario para descubrir los horarios libres. 📅",
+                          "Elige una fecha en el calendario para descubrir los horarios libres.",
                           "warning",
                         );
                       } else {
@@ -1365,6 +1424,7 @@ const BookingForm = () => {
                   <button
                     type="button"
                     className="side-nav-arrow"
+                    aria-label="Volver al paso anterior: El Dia"
                     onClick={goToPrev}
                   >
                     <FaChevronLeft />
@@ -1414,6 +1474,7 @@ const BookingForm = () => {
                         className="btn-chip-clear"
                         onClick={clearTimeSelection}
                         title="Desmarcar horario"
+                        aria-label="Desmarcar horario elegido"
                       >
                         <FaTimes /> Desmarcar
                       </button>
@@ -1529,13 +1590,14 @@ const BookingForm = () => {
                   <button
                     type="button"
                     className={`side-nav-arrow ${formData.timeSlot && formData.timeSlot.getHours() !== 0 ? "ready" : "locked"}`}
+                    aria-label="Avanzar al paso siguiente: Confirmar"
                     onClick={() => {
                       if (
                         !formData.timeSlot ||
                         formData.timeSlot.getHours() === 0
                       ) {
                         showToast(
-                          "Seleccioná el horario que mejor se adapte a vos para continuar. ⏰",
+                          "Selecciona el horario que mejor se adapte a vos para continuar.",
                           "warning",
                         );
                       } else {
@@ -1555,7 +1617,7 @@ const BookingForm = () => {
             </div>
 
             {/* =======================================
-                PASO 4: CONFIRMACIÓN
+                PASO 4: CONFIRMACION
                 ======================================= */}
             <div
               ref={(element) => {
@@ -1565,7 +1627,7 @@ const BookingForm = () => {
             >
               <div className="calendar-focus-container">
                 <h3 className="section-title center-text" tabIndex={-1}>
-                  <FaCalendarCheck /> Confirmación Final
+                  <FaCalendarCheck /> Confirmacion Final
                 </h3>
                 <p className="step-empathy-note">
                   Revisa duracion, dia y horario. Si algo no coincide, volve al
@@ -1573,8 +1635,8 @@ const BookingForm = () => {
                 </p>
 
                 <div className="duration-selector">
-                  <label>Duración de la clase</label>
-                  <div className="duration-option-grid" role="list" aria-label="Opciones de duración">
+                  <label>Duracion de la clase</label>
+                  <div className="duration-option-grid" role="list" aria-label="Opciones de duracion">
                     {durationOptions.map((duration) => {
                       const isSelected = Number(formData.duration) === duration;
                       return (
@@ -1593,10 +1655,10 @@ const BookingForm = () => {
                   <p className="duration-current-selection">
                     {formData.duration
                       ? `Elegiste ${formatDurationOptionLabel(formData.duration)} para este turno.`
-                      : "Elegí cuánto tiempo querés reservar para continuar."}
+                      : "Elige cuanto tiempo quieres reservar para continuar."}
                   </p>
                   <p className="duration-limit">
-                    Límite disponible para este turno: {formatDurationOptionLabel(maxAllowedDuration)}
+                    Limite disponible para este turno: {formatDurationOptionLabel(maxAllowedDuration)}
                   </p>
                 </div>
 
@@ -1607,6 +1669,8 @@ const BookingForm = () => {
                   studentName={formData.studentName}
                   educationLevel={formData.educationLevel}
                   subject={formData.subject}
+                  school={formData.school}
+                  lookupHint={confirmationLookupHint}
                 />
               </div>
 

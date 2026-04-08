@@ -467,7 +467,7 @@
   gap: 6px;
 }
 
-/* Tipografía de Valores */
+/* TipografÃ­a de Valores */
 .client-portal-wrapper .value-primary {
   font-size: 1.1rem;
   font-weight: 700;
@@ -562,7 +562,7 @@
   font-size: 0.9rem;
 }
 
-/* Botones de acción (iguales que antes) */
+/* Botones de acciÃ³n (iguales que antes) */
 .client-portal-wrapper .btn-reschedule {
   background: white;
   border-color: var(--cp-border);
@@ -659,7 +659,7 @@
   padding: 1.5rem;
 }
 
-/* Comparación Antes -> Después */
+/* ComparaciÃ³n Antes -> DespuÃ©s */
 .client-portal-wrapper .reschedule-comparison {
   display: flex;
   align-items: center;
@@ -737,7 +737,7 @@
   background-color: #10b981 !important;
 }
 
-/* Duración */
+/* DuraciÃ³n */
 .client-portal-wrapper .duration-row {
   margin-top: 1rem;
 }
@@ -831,7 +831,7 @@
 .client-portal-wrapper .safe-return {
   background: #e2e8f0;
   color: #1e293b;
-  order: 2; /* Botón gris abajo */
+  order: 2; /* BotÃ³n gris abajo */
 }
 .client-portal-wrapper .safe-return:hover {
   background: #cbd5e1;
@@ -840,7 +840,7 @@
 .client-portal-wrapper .danger-confirm {
   background: #ef4444;
   color: white;
-  order: 1; /* Botón rojo arriba para confirmación explicita */
+  order: 1; /* BotÃ³n rojo arriba para confirmaciÃ³n explicita */
   width: 100%;
 }
 .client-portal-wrapper .danger-confirm:hover {
@@ -852,7 +852,7 @@
 
 /* AGREGAR AL FINAL DEL ARCHIVO: */
 
-/* --- TOAST NOTIFICATION (ALERTA DINÁMICA) --- */
+/* --- TOAST NOTIFICATION (ALERTA DINÃMICA) --- */
 .portal-toast {
   position: fixed;
   bottom: 30px; /* Abajo a la derecha */
@@ -930,12 +930,12 @@
 
 /* AGREGAR AL FINAL: */
 
-/* --- ANIMACIÓN DE SALIDA SUAVE (FADE OUT) --- */
+/* --- ANIMACIÃ“N DE SALIDA SUAVE (FADE OUT) --- */
 
 .ticket-wrapper {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); /* Transición suave */
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); /* TransiciÃ³n suave */
   opacity: 1;
-  max-height: 500px; /* Altura máxima arbitraria para permitir colapso */
+  max-height: 500px; /* Altura mÃ¡xima arbitraria para permitir colapso */
   overflow: hidden; /* Necesario para que el colapso funcione */
   transform: translateX(0);
   margin-bottom: 0;
