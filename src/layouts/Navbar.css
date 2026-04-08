@@ -1,0 +1,350 @@
+/* ==========================================================================
+   NAVBAR ÉLITE v25.0 - ACADEMIA AGUSTÍN ELÍAS SOSA
+   Diseño Light Mode Puro, Eliminación mágica de fondo blanco en Logo
+   ========================================================================== */
+
+:root {
+  --nav-bg-glass: rgba(255, 255, 255, 0.95); /* Blanco brillante esmerilado */
+  --nav-bg-scrolled: rgba(255, 255, 255, 0.98); /* Casi sólido al bajar */
+
+  --nav-text-main: #1e293b; /* Azul marino/gris muy oscuro para alto contraste */
+  --nav-text-soft: #64748b; /* Gris medio para íconos */
+
+  --nav-accent: #10b981; /* Verde Esmeralda */
+  --nav-accent-glow: rgba(16, 185, 129, 0.1);
+
+  --nav-border: rgba(0, 0, 0, 0.05); /* Línea divisoria súper suave */
+  --nav-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+
+  --transition-nav: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+[data-theme="dark"] {
+  --nav-bg-glass: rgba(7, 17, 31, 0.94);
+  --nav-bg-scrolled: rgba(7, 17, 31, 0.98);
+  --nav-text-main: #e5eef7;
+  --nav-text-soft: #a7b4c7;
+  --nav-accent: #34d399;
+  --nav-accent-glow: rgba(52, 211, 153, 0.14);
+  --nav-border: rgba(148, 163, 184, 0.18);
+  --nav-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================
+     ESTRUCTURA PRINCIPAL 
+     ========================================= */
+.navbar-elite {
+  background: var(--nav-bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  height: 100px; /* Excelente altura para que el logo respire */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  border-bottom: 1px solid var(--nav-border);
+  transition: var(--transition-nav);
+}
+
+/* Efecto de achicamiento (Shrink) al hacer scroll */
+.navbar-elite.scrolled {
+  height: 75px;
+  background: var(--nav-bg-scrolled);
+  box-shadow: var(--nav-shadow);
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  max-width: 1350px;
+  padding: 0 2rem;
+}
+
+/* =========================================
+     IZQUIERDA: LOGO (LA MAGIA DE MULTIPLY)
+     ========================================= */
+.navbar-brand-logo {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  text-decoration: none;
+  z-index: 10;
+  /* Cero fondos, cero cajas */
+  background: transparent;
+}
+
+.logo-img-horizontal {
+  height: 76px;
+  width: auto;
+  object-fit: contain;
+  transition: var(--transition-nav);
+
+  /* ¡EL TRUCO DE MAGIA! 
+       Elimina visualmente el recuadro blanco de tu imagen combinándolo con el fondo */
+  filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.12));
+}
+
+.navbar-elite.scrolled .logo-img-horizontal {
+  height: 60px; /* El logo se achica en proporción a la barra */
+}
+
+/* =========================================
+     CENTRO: BOTÓN LUNA (MODO OSCURO)
+     ========================================= */
+.navbar-center-zone {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 0.75rem;
+}
+
+.theme-toggle-btn {
+  background: rgba(248, 250, 252, 0.92);
+  border: 1px solid var(--nav-border);
+  color: var(--nav-text-soft);
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: var(--transition-nav);
+}
+
+.theme-toggle-btn:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: var(--nav-text-main);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.icon-moon {
+  color: #475569; /* Gris oscuro elegante */
+  transition: var(--transition-nav);
+}
+.theme-toggle-btn:hover .icon-moon {
+  color: #0f172a;
+}
+
+.icon-sun {
+  color: #f59e0b;
+  transition: var(--transition-nav);
+}
+
+[data-theme="dark"] .theme-toggle-btn {
+  background: rgba(15, 23, 42, 0.92);
+  color: #d1fae5;
+}
+
+[data-theme="dark"] .theme-toggle-btn:hover {
+  background: #0f172a;
+  border-color: rgba(52, 211, 153, 0.5);
+}
+
+[data-theme="dark"] .nav-link-btn:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+[data-theme="dark"] .navbar-brand-logo {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  height: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
+}
+
+[data-theme="dark"] .logo-img-horizontal {
+  filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.16));
+}
+
+/* =========================================
+     DERECHA: MENÚ DE NAVEGACIÓN
+     ========================================= */
+.nav-menu-list {
+  display: flex;
+  list-style: none;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.nav-item {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.nav-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--nav-text-soft);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: var(--transition-nav);
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-icon {
+  font-size: 1.1rem;
+  margin-top: -2px;
+  transition: var(--transition-nav);
+}
+
+/* LÍNEA VERDE DESLIZANTE INFERIOR */
+.nav-link-btn::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 3px;
+  background-color: var(--nav-accent);
+  border-radius: 3px 3px 0 0;
+  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.nav-link-btn:hover {
+  color: var(--nav-text-main);
+  background: #f1f5f9; /* Gris extremadamente sutil al pasar el mouse */
+}
+.nav-link-btn:hover::after {
+  width: 60%;
+}
+.nav-link-btn:hover .nav-icon {
+  color: var(--nav-accent);
+  transform: scale(1.1);
+}
+
+/* LINK ACTIVO (Ej: Si estás en "Reservar") */
+.nav-link-btn.active {
+  color: var(--nav-accent);
+  background: var(--nav-accent-glow); /* Fondo verdecito claro */
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.22);
+}
+.nav-link-btn.active .nav-icon {
+  color: var(--nav-accent);
+}
+.nav-link-btn.active::after {
+  display: none;
+}
+
+[data-theme="dark"] .nav-link-btn.active {
+  color: #07111f;
+  background: #34d399;
+  box-shadow: 0 10px 24px rgba(52, 211, 153, 0.22);
+}
+
+[data-theme="dark"] .nav-link-btn.active .nav-icon {
+  color: #07111f;
+}
+
+/* =========================================
+     MENÚ HAMBURGUESA (MÓVIL)
+     ========================================= */
+.menu-toggle-icon {
+  display: none;
+  font-size: 1.8rem;
+  color: var(--nav-text-main);
+  cursor: pointer;
+  transition: var(--transition-nav);
+  z-index: 20;
+}
+
+/* =========================================
+     RESPONSIVE (MÓVILES Y TABLETS)
+     ========================================= */
+@media screen and (max-width: 960px) {
+  .navbar-elite {
+    height: 85px;
+  }
+  .navbar-elite.scrolled {
+    height: 70px;
+  }
+
+  .logo-img-horizontal {
+    height: 50px;
+  }
+  .navbar-elite.scrolled .logo-img-horizontal {
+    height: 40px;
+  }
+
+  .menu-toggle-icon {
+    display: block;
+  }
+
+  /* Centrar botón de luna entre logo y hamburguesa */
+  .navbar-center-zone {
+    justify-content: flex-end;
+    margin-left: auto;
+    margin-right: 18px;
+  }
+
+  /* Menú desplegable estilo App Móvil */
+  .nav-menu-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    height: 100vh;
+    position: absolute;
+    top: 100%;
+    left: -100%;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    background: var(--nav-bg-glass);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    padding-top: 2rem;
+    gap: 1.2rem;
+    border-top: 1px solid var(--nav-border);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .nav-menu-list.active {
+    left: 0;
+    opacity: 1;
+  }
+
+  .nav-item {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav-link-btn {
+    width: 85%;
+    padding: 1.2rem;
+    justify-content: center;
+    font-size: 1.1rem;
+    border: 1px solid #e2e8f0;
+    background: var(--nav-bg-scrolled);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  }
+
+  .nav-link-btn::after {
+    display: none;
+  }
+}
