@@ -44,6 +44,9 @@ import BookingConfirmationSummary from "./booking/BookingConfirmationSummary";
 import BookingSuccessModal from "./booking/BookingSuccessModal";
 import PersonalInfoStep from "./booking/steps/PersonalInfoStep";
 import AcademicInfoStep from "./booking/steps/AcademicInfoStep";
+import DateSelectionStep from "./booking/steps/DateSelectionStep";
+import TimeSelectionStep from "./booking/steps/TimeSelectionStep";
+import ConfirmationStep from "./booking/steps/ConfirmationStep";
 import { fetchAvailability, createBooking } from "../api/bookingApi";
 import { useBookingWizard } from "../hooks/useBookingWizard";
 import {
@@ -72,21 +75,10 @@ import "../styles/accessibility-system.css";
 
 registerLocale("es", es);
 
-// --- SONIDOS UX ---
-const stepSound = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-);
-const successSound = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
-);
-const unlockSound = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/2997/2997-preview.mp3",
-);
-
 const STEP_VOICE_OPTIONS = {
-  rate: 0.9,
-  pitch: 1.05,
-  volume: 1,
+  rate: 0.86,
+  pitch: 0.98,
+  volume: 0.9,
 };
 
 const STEP_VOICE_GUIDANCE = {
@@ -144,14 +136,29 @@ const BookingForm = () => {
   const textareaRef = useRef(null);
   const prevUnlockedAcademicRef = useRef(false);
   const prevUnlockedCommentsRef = useRef(false);
+  const stepSoundRef = useRef(
+    new Audio(
+      "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+    ),
+  );
+  const successSoundRef = useRef(
+    new Audio(
+      "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
+    ),
+  );
+  const unlockSoundRef = useRef(
+    new Audio(
+      "https://assets.mixkit.co/active_storage/sfx/2997/2997-preview.mp3",
+    ),
+  );
 
   const playStepSound = () => {
-    stepSound.volume = 0.15;
-    stepSound.play().catch(() => {});
+    stepSoundRef.current.currentTime = 0;
+    stepSoundRef.current.play().catch(() => {});
   };
   const playUnlockSound = () => {
-    unlockSound.volume = 0.3;
-    unlockSound.play().catch(() => {});
+    unlockSoundRef.current.currentTime = 0;
+    unlockSoundRef.current.play().catch(() => {});
   };
 
   const syncSliderHeight = useCallback(() => {
@@ -406,6 +413,13 @@ const BookingForm = () => {
   const completedRequiredFields = requiredChecks.filter(Boolean).length;
   const currentStepInfo = WIZARD_STEPS.find((step) => step.id === currentStep);
   const nextStepInfo = WIZARD_STEPS.find((step) => step.id === currentStep + 1);
+  const getSlidePanelA11y = (stepId) => {
+    const isActive = currentStep === stepId;
+    return {
+      "aria-hidden": !isActive,
+      inert: isActive ? undefined : "",
+    };
+  };
   const stepperFlowCopy = nextStepInfo
     ? `Completá este tramo y enseguida seguimos con ${nextStepInfo.label.toLowerCase()}.`
     : "Ya estás en el cierre final: revisá el resumen y confirmá tu reserva.";
@@ -840,7 +854,8 @@ const BookingForm = () => {
         tutorName: "Agustin",
       });
 
-      successSound.play().catch(() => {});
+      successSoundRef.current.currentTime = 0;
+      successSoundRef.current.play().catch(() => {});
 
       const end = addMinutes(dateObj, Number(formData.duration) * 60);
       const bookingCode = response.data.data.bookingCode;
@@ -1221,6 +1236,7 @@ const BookingForm = () => {
                 slideRefs.current[1] = element;
               }}
               className={`form-slide-panel ${currentStep === 1 ? "active-panel" : ""}`}
+              {...getSlidePanelA11y(1)}
             >
               <PersonalInfoStep
                 formData={formData}
@@ -1258,227 +1274,25 @@ const BookingForm = () => {
                 slideRefs.current[2] = element;
               }}
               className={`form-slide-panel ${currentStep === 2 ? "active-panel" : ""}`}
+              {...getSlidePanelA11y(2)}
             >
-              <div className="step-content-with-arrows step-content-focus">
-                <div className="calendar-focus-container relative-interaction">
-                  <div className="step-stage-shell calendar-stage-shell">
-                    <div className="step-stage-main">
-                      <div className="step-stage-heading">
-                        <div>
-                          <span className="step-stage-kicker">
-                            Paso 2 · Fecha
-                          </span>
-                          <h3 className="section-title" tabIndex={-1}>
-                            <FaCalendarAlt /> Elegí un día
-                          </h3>
-                          <p className="step-empathy-note">
-                            Si estás organizando a un menor, elegí un día que
-                            también le dé margen para descansar y llegar
-                            tranquilo.
-                          </p>
-                        </div>
+              <DateSelectionStep
+                formData={formData}
+                selectedDayOnly={selectedDayOnly}
+                selectedDayLabel={selectedDayLabel}
+                availableSlotCount={availableSlotCount}
+                nextFreeSlot={nextFreeSlot}
+                isDesktopCalendarViewport={isDesktopCalendarViewport}
+                isCalendarExpanded={isCalendarExpanded}
+                handleDateSelect={handleDateSelect}
+                clearDateSelection={clearDateSelection}
+                handleProceedToTimeStep={handleProceedToTimeStep}
+                goToPrev={goToPrev}
+                openCalendarExpanded={openCalendarExpanded}
+                renderCalendarHeader={renderCalendarHeader}
+                getDayClassName={getDayClassName}
+              />
 
-                        {isDesktopCalendarViewport && (
-                          <button
-                            type="button"
-                            className="calendar-zoom-button"
-                            onClick={openCalendarExpanded}
-                            aria-haspopup="dialog"
-                            aria-expanded={isCalendarExpanded}
-                          >
-                            <FaSearchPlus /> Ampliar calendario
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="calendar-toolbar-row">
-                        <div className="calendar-legend">
-                          <div className="legend-item">
-                            <span className="legend-icon disabled"></span>{" "}
-                            Ocupado
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon today"></span> Hoy
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon available"></span>{" "}
-                            Disponible
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon selected"></span>{" "}
-                            Seleccionado
-                          </div>
-                        </div>
-
-                        <span className="calendar-toolbar-helper">
-                          {selectedDayOnly
-                            ? "Fecha lista. El siguiente paso ya está preparado."
-                            : "Tocá un día para habilitar los horarios disponibles."}
-                        </span>
-                      </div>
-
-                      <div
-                        className={`calendar-selection-banner ${selectedDayOnly ? "is-active" : ""}`}
-                        role="status"
-                        aria-live="polite"
-                      >
-                        <div>
-                          <span className="calendar-selection-kicker">
-                            Selección actual
-                          </span>
-                          <strong>
-                            {selectedDayOnly
-                              ? selectedDayLabel
-                              : "Todavía no elegiste una fecha"}
-                          </strong>
-                          <p>
-                            {selectedDayOnly
-                              ? "Si la cambiás, los horarios del paso siguiente se actualizan solos."
-                              : "En pantallas grandes podés abrir la vista ampliada para verla mucho más cómoda."}
-                          </p>
-                        </div>
-
-                        {selectedDayOnly ? (
-                          <button
-                            type="button"
-                            className="btn-chip-clear"
-                            onClick={clearDateSelection}
-                            title="Quitar fecha"
-                            aria-label="Quitar fecha elegida"
-                          >
-                            <FaTimes /> Quitar selección
-                          </button>
-                        ) : (
-                          <span className="calendar-selection-tip">
-                            Paso siguiente: horarios. Si volvés a tocar la fecha
-                            elegida, la quitás.
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="calendar-glass-box calendar-rich-box">
-                        <DatePicker
-                          selected={formData.timeSlot}
-                          onChange={() => {}}
-                          onSelect={handleDateSelect}
-                          minDate={new Date()}
-                          inline
-                          locale="es"
-                          fixedHeight
-                          calendarClassName="neuro-calendar neuro-calendar-rich"
-                          dayClassName={getDayClassName}
-                          renderCustomHeader={renderCalendarHeader(1)}
-                        />
-                      </div>
-                    </div>
-
-                    <aside className="step-stage-sidebar">
-                      <div className="stage-sidebar-cards">
-                        <article className="selection-insight-card">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaCalendarCheck />
-                            </span>
-                            <span className="insight-label">Día elegido</span>
-                          </div>
-                          <strong>
-                            {selectedDayOnly
-                              ? format(selectedDayOnly, "EEEE d 'de' MMMM", {
-                                  locale: es,
-                                })
-                              : "Todavía sin fecha"}
-                          </strong>
-                          <small>
-                            {selectedDayOnly
-                              ? "La reserva ya quedó enfocada en este día."
-                              : "Primero elegí el día y después te mostramos solo horarios libres."}
-                          </small>
-                        </article>
-
-                        <article className="selection-insight-card">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaClock />
-                            </span>
-                            <span className="insight-label">
-                              Horarios libres
-                            </span>
-                          </div>
-                          <strong>
-                            {selectedDayOnly
-                              ? `${availableSlotCount} opciones`
-                              : "--"}
-                          </strong>
-                          <small>
-                            {selectedDayOnly
-                              ? availableSlotCount > 0
-                                ? "Filtramos la agenda real para que no pierdas tiempo."
-                                : "Ese día ya no tiene espacios disponibles."
-                              : "Este contador aparece apenas confirmás una fecha."}
-                          </small>
-                        </article>
-
-                        <article className="selection-insight-card accent">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaLightbulb />
-                            </span>
-                            <span className="insight-label">
-                              Primer horario libre
-                            </span>
-                          </div>
-                          <strong>
-                            {nextFreeSlot
-                              ? `${format(nextFreeSlot, "HH:mm")} hs`
-                              : "--"}
-                          </strong>
-                          <small>
-                            {nextFreeSlot
-                              ? "Ideal si querés resolver rápido sin revisar toda la grilla."
-                              : "Cuando haya cupos te lo vamos a marcar acá."}
-                          </small>
-                        </article>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={`btn-stage-next desktop-stage-cta ${selectedDayOnly ? "is-ready" : "is-locked"}`}
-                        onClick={handleProceedToTimeStep}
-                      >
-                        <span>
-                          {selectedDayOnly
-                            ? "Ver horarios disponibles"
-                            : "Elegí un día para continuar"}
-                        </span>
-                        <FaArrowRight />
-                      </button>
-
-                      <p className="stage-next-helper">
-                        {selectedDayOnly
-                          ? "Te llevamos al paso 3 con la fecha ya enfocada."
-                          : "Cuando elijas una fecha, este botón se convierte en tu acceso directo al siguiente paso."}
-                      </p>
-                    </aside>
-                  </div>
-                </div>
-              </div>
-
-              <div className="step-actions stage-actions-mobile space-between">
-                <button
-                  type="button"
-                  className="btn-neuro-secondary"
-                  onClick={goToPrev}
-                >
-                  <FaArrowLeft /> Volver a tus datos
-                </button>
-                <button
-                  type="button"
-                  className={`btn-neuro-primary ${selectedDayOnly ? "btn-ready" : "btn-disabled"}`}
-                  onClick={handleProceedToTimeStep}
-                >
-                  Horarios disponibles <FaArrowRight />
-                </button>
-              </div>
             </div>
 
             {/* =======================================
@@ -1489,276 +1303,24 @@ const BookingForm = () => {
                 slideRefs.current[3] = element;
               }}
               className={`form-slide-panel ${currentStep === 3 ? "active-panel" : ""}`}
+              {...getSlidePanelA11y(3)}
             >
-              <div className="step-content-with-arrows step-content-focus">
-                <div className="calendar-focus-container relative-interaction">
-                  <div className="step-stage-shell slot-stage-shell">
-                    <div className="step-stage-main">
-                      <div className="step-stage-heading">
-                        <div>
-                          <span className="step-stage-kicker">
-                            Paso 3 · Horario
-                          </span>
-                          <h3 className="section-title" tabIndex={-1}>
-                            <FaClock /> Turnos disponibles
-                          </h3>
-                          <p className="step-empathy-note">
-                            Cada botón es un horario posible. Los bloques
-                            ocupados o pasados quedan bloqueados para evitar
-                            confusiones.
-                          </p>
-                        </div>
+              <TimeSelectionStep
+                formData={formData}
+                isTimeSelected={isTimeSelected}
+                selectedTimeLabel={selectedTimeLabel}
+                selectedDayLabel={selectedDayLabel}
+                selectedDayOnly={selectedDayOnly}
+                slotSections={slotSections}
+                availableSlots={availableSlots}
+                availableSlotCount={availableSlotCount}
+                nextFreeSlot={nextFreeSlot}
+                handleTimeSelect={handleTimeSelect}
+                clearTimeSelection={clearTimeSelection}
+                handleProceedToConfirmationStep={handleProceedToConfirmationStep}
+                goToPrev={goToPrev}
+              />
 
-                        <button
-                          type="button"
-                          className="calendar-secondary-action"
-                          onClick={goToPrev}
-                        >
-                          <FaCalendarAlt /> Cambiar fecha
-                        </button>
-                      </div>
-
-                      <div className="calendar-toolbar-row">
-                        <div className="calendar-legend">
-                          <div className="legend-item">
-                            <span className="legend-icon disabled"></span>{" "}
-                            Ocupado
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon available"></span>{" "}
-                            Disponible
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon selected"></span>{" "}
-                            Seleccionado
-                          </div>
-                        </div>
-
-                        <span className="calendar-toolbar-helper">
-                          {isTimeSelected
-                            ? "Horario listo. El siguiente paso es revisar y confirmar."
-                            : "Elegí una hora libre y te habilitamos la confirmación."}
-                        </span>
-                      </div>
-
-                      <div
-                        className={`calendar-selection-banner ${isTimeSelected ? "is-active" : ""}`}
-                        role="status"
-                        aria-live="polite"
-                      >
-                        <div>
-                          <span className="calendar-selection-kicker">
-                            Horario elegido
-                          </span>
-                          <strong>
-                            {isTimeSelected
-                              ? `${selectedTimeLabel} · ${selectedDayLabel}`
-                              : "Todavía no elegiste un horario"}
-                          </strong>
-                          <p>
-                            {isTimeSelected
-                              ? "Ahora solo queda revisar duración, resumen y confirmar."
-                              : "Podés tocar cualquier bloque libre para marcarlo y seguir."}
-                          </p>
-                        </div>
-
-                        {isTimeSelected ? (
-                          <button
-                            type="button"
-                            className="btn-chip-clear"
-                            onClick={clearTimeSelection}
-                            title="Quitar horario"
-                            aria-label="Quitar horario elegido"
-                          >
-                            <FaTimes /> Quitar selección
-                          </button>
-                        ) : (
-                          <span className="calendar-selection-tip">
-                            Paso siguiente: confirmar. Si volvés a tocar el
-                            bloque elegido, lo quitás.
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="calendar-glass-box panoramic slot-rich-box">
-                        <div className="slots-container">
-                          {availableSlots.length > 0 ? (
-                            <div className="slot-sections">
-                              {slotSections.map((section) => (
-                                <section
-                                  key={section.id}
-                                  className="slot-section"
-                                >
-                                  <div className="slot-section-header">
-                                    <div>
-                                      <h4>{section.label}</h4>
-                                      <p>{section.helper}</p>
-                                    </div>
-                                    <span>
-                                      {
-                                        section.slots.filter(
-                                          (slot) => !slot.isOccupied,
-                                        ).length
-                                      }{" "}
-                                      libres
-                                    </span>
-                                  </div>
-
-                                  <div className="slots-grid">
-                                    {section.slots.map((slot, index) => {
-                                      const isSelected =
-                                        formData.timeSlot?.getTime() ===
-                                        slot.timeObj.getTime();
-                                      const slotStateLabel = slot.isOccupied
-                                        ? slot.status === "past"
-                                          ? "No disponible"
-                                          : "Ocupado"
-                                        : isSelected
-                                          ? "Elegido"
-                                          : "Libre";
-
-                                      return (
-                                        <button
-                                          key={`${section.id}-${index}`}
-                                          type="button"
-                                          disabled={slot.isOccupied}
-                                          className={`slot-btn ${slot.isOccupied ? "disabled" : ""} ${isSelected ? "selected" : ""}`}
-                                          onClick={() =>
-                                            handleTimeSelect(slot.timeObj)
-                                          }
-                                          aria-pressed={isSelected}
-                                          aria-label={`${format(slot.timeObj, "HH:mm")} ${slotStateLabel}`}
-                                        >
-                                          <span className="slot-main-label">
-                                            {format(slot.timeObj, "HH:mm")}
-                                          </span>
-                                          <span className="slot-sub-label">
-                                            {slotStateLabel}
-                                          </span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </section>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="no-slots-box">
-                              <FaTimesCircle />
-                              <p>Cargando agenda...</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <aside className="step-stage-sidebar">
-                      <div className="stage-sidebar-cards">
-                        <article className="selection-insight-card">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaCalendarCheck />
-                            </span>
-                            <span className="insight-label">Día en foco</span>
-                          </div>
-                          <strong>
-                            {selectedDayOnly
-                              ? format(selectedDayOnly, "EEEE d 'de' MMMM", {
-                                  locale: es,
-                                })
-                              : "Sin fecha"}
-                          </strong>
-                          <small>
-                            {selectedDayOnly
-                              ? "Si necesitás otro día, podés volver sin perder tus datos."
-                              : "Vuelve al paso anterior para elegir la fecha."}
-                          </small>
-                        </article>
-
-                        <article className="selection-insight-card">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaClock />
-                            </span>
-                            <span className="insight-label">
-                              Estado del horario
-                            </span>
-                          </div>
-                          <strong>
-                            {isTimeSelected
-                              ? selectedTimeLabel
-                              : nextFreeSlot
-                                ? `${format(nextFreeSlot, "HH:mm")} hs`
-                                : "--"}
-                          </strong>
-                          <small>
-                            {isTimeSelected
-                              ? "Ya puedes pasar al resumen final."
-                              : nextFreeSlot
-                                ? "Te sugerimos empezar por el primer hueco libre."
-                                : "Si este día no sirve, volvés y elegís otra fecha."}
-                          </small>
-                        </article>
-
-                        <article className="selection-insight-card accent">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaLightbulb />
-                            </span>
-                            <span className="insight-label">Próximo paso</span>
-                          </div>
-                          <strong>
-                            {isTimeSelected
-                              ? "Revisar y confirmar"
-                              : `${availableSlotCount} bloques libres`}
-                          </strong>
-                          <small>
-                            {isTimeSelected
-                              ? "En la última pantalla ajustás duración y revisás el resumen."
-                              : "Apenas elijas un horario libre, te habilitamos la confirmación."}
-                          </small>
-                        </article>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={`btn-stage-next desktop-stage-cta ${isTimeSelected ? "is-ready" : "is-locked"}`}
-                        onClick={handleProceedToConfirmationStep}
-                      >
-                        <span>
-                          {isTimeSelected
-                            ? "Continuar a confirmar"
-                            : "Elegí un horario para continuar"}
-                        </span>
-                        <FaArrowRight />
-                      </button>
-
-                      <p className="stage-next-helper">
-                        {isTimeSelected
-                          ? "El botón ya quedó listo para llevarte al resumen final."
-                          : "Cuando marques un horario libre, este botón se activa y te lleva al cierre de la reserva."}
-                      </p>
-                    </aside>
-                  </div>
-                </div>
-              </div>
-
-              <div className="step-actions stage-actions-mobile space-between">
-                <button
-                  type="button"
-                  className="btn-neuro-secondary"
-                  onClick={goToPrev}
-                >
-                  <FaArrowLeft /> Cambiar fecha
-                </button>
-                <button
-                  type="button"
-                  className={`btn-neuro-primary ${isTimeSelected ? "btn-ready" : "btn-disabled"}`}
-                  onClick={handleProceedToConfirmationStep}
-                >
-                  Confirmar reserva <FaArrowRight />
-                </button>
-              </div>
             </div>
 
             {/* =======================================
@@ -1769,234 +1331,27 @@ const BookingForm = () => {
                 slideRefs.current[4] = element;
               }}
               className={`form-slide-panel ${currentStep === 4 ? "active-panel" : ""}`}
+              {...getSlidePanelA11y(4)}
             >
-              <div className="calendar-focus-container confirmation-stage">
-                <div className="confirmation-stage-intro">
-                  <div className="confirmation-stage-copy">
-                    <span className="confirmation-stage-eyebrow">
-                      Paso 4 de 4
-                    </span>
-                    <h3
-                      className="section-title center-text confirmation-stage-title"
-                      tabIndex={-1}
-                    >
-                      <FaCalendarCheck /> Confirmación final
-                    </h3>
-                    <p className="step-empathy-note confirmation-stage-note">
-                      Ya tenés fecha y horario. Solo queda elegir la duración
-                      ideal y revisar el resumen con todo bien claro antes de
-                      confirmar.
-                    </p>
-                  </div>
+              <ConfirmationStep
+                formData={formData}
+                isAdult={isAdult}
+                isTimeSelected={isTimeSelected}
+                isConfirmationReady={isConfirmationReady}
+                confirmationDateLabel={confirmationDateLabel}
+                confirmationDurationLabel={confirmationDurationLabel}
+                confirmationTimeRangeLabel={confirmationTimeRangeLabel}
+                confirmationEducationLabel={confirmationEducationLabel}
+                responsibleRelationshipLabel={responsibleRelationshipLabel}
+                confirmationLookupHint={confirmationLookupHint}
+                durationOptions={durationOptions}
+                maxAllowedDuration={maxAllowedDuration}
+                handleDurationSelect={handleDurationSelect}
+                handleSubmit={handleSubmit}
+                goToPrev={goToPrev}
+                loading={loading}
+              />
 
-                  <div
-                    className={`confirmation-stage-badge ${isConfirmationReady ? "is-ready" : ""}`}
-                  >
-                    <span>
-                      {isConfirmationReady ? "Todo listo" : "Último detalle"}
-                    </span>
-                    <strong>
-                      {isConfirmationReady
-                        ? "Reserva preparada para confirmar"
-                        : "Elegí cuánto durará la clase"}
-                    </strong>
-                  </div>
-                </div>
-
-                <section className="confirmation-hero-panel">
-                  <article className="confirmation-hero-main">
-                    <span className="confirmation-hero-kicker">
-                      Tu reserva en una mirada
-                    </span>
-                    <h4>
-                      {confirmationDateLabel || "Aún falta definir el turno"}
-                    </h4>
-                    <p>
-                      {confirmationTimeRangeLabel
-                        ? "Este es el horario que va a quedar guardado. Ajustá la duración y confirmás en un último paso, sin vueltas."
-                        : "Cuando elijas un horario, acá te dejamos el resumen principal para cerrarlo con tranquilidad."}
-                    </p>
-
-                    <div className="confirmation-hero-facts">
-                      <div className="confirmation-hero-fact">
-                        <FaClock />
-                        <div>
-                          <span>Horario</span>
-                          <strong>
-                            {confirmationTimeRangeLabel || "Pendiente"}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div className="confirmation-hero-fact">
-                        <FaHourglassHalf />
-                        <div>
-                          <span>Duración</span>
-                          <strong>
-                            {confirmationDurationLabel || "Aún sin elegir"}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div className="confirmation-hero-fact">
-                        <FaTicketAlt />
-                        <div>
-                          <span>Gestión</span>
-                          <strong>Código al confirmar</strong>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-
-                  <aside className="confirmation-hero-side">
-                    <span className="confirmation-hero-side-kicker">
-                      Experiencia guiada
-                    </span>
-
-                    <div className="confirmation-hero-checks">
-                      <span className="confirmation-hero-check is-done">
-                        <FaCheckCircle /> Fecha elegida
-                      </span>
-                      <span
-                        className={`confirmation-hero-check ${isTimeSelected ? "is-done" : ""}`}
-                      >
-                        <FaCheckCircle /> Horario reservado
-                      </span>
-                      <span
-                        className={`confirmation-hero-check ${isConfirmationReady ? "is-done" : ""}`}
-                      >
-                        <FaShieldAlt /> Duración confirmada
-                      </span>
-                    </div>
-
-                    <p>
-                      {isConfirmationReady
-                        ? "Ya elegiste una opción compatible. Si todo te cierra, el botón final queda listo para confirmar."
-                        : `Te mostramos ${durationOptions.length} opciones compatibles con este horario para que elijas sin cruces ni confusiones.`}
-                    </p>
-                  </aside>
-                </section>
-
-                <section className="duration-selector duration-selector-premium">
-                  <div className="duration-selector-header">
-                    <div>
-                      <span className="duration-kicker">
-                        Duración de la clase
-                      </span>
-                      <h4>Elegí el tiempo ideal para este encuentro</h4>
-                      <p>
-                        Solo ves duraciones que entran dentro de ese horario,
-                        así todo queda prolijo, claro y sin superposiciones.
-                      </p>
-                    </div>
-
-                    <span className="duration-limit-badge">
-                      Hasta {formatDurationOptionLabel(maxAllowedDuration)}
-                    </span>
-                  </div>
-
-                  <div className="duration-selector-layout">
-                    <div
-                      className="duration-option-grid"
-                      role="list"
-                      aria-label="Opciones de duración"
-                    >
-                      {durationOptions.map((duration) => {
-                        const isSelected =
-                          Number(formData.duration) === duration;
-                        return (
-                          <button
-                            key={duration}
-                            type="button"
-                            className={`duration-chip ${isSelected ? "selected" : ""}`}
-                            onClick={() => handleDurationSelect(duration)}
-                            aria-pressed={isSelected}
-                          >
-                            {formatDurationOptionLabel(duration)}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <aside
-                      className={`duration-summary-card ${isConfirmationReady ? "is-ready" : ""}`}
-                    >
-                      <span className="duration-summary-kicker">
-                        {isConfirmationReady
-                          ? "Duración elegida"
-                          : "Tu siguiente paso"}
-                      </span>
-                      <strong>
-                        {isConfirmationReady
-                          ? confirmationDurationLabel
-                          : "Marcá una opción"}
-                      </strong>
-                      <p>
-                        {formData.duration
-                          ? `La clase quedará reservada por ${formatDurationOptionLabel(formData.duration)}.`
-                          : "Tocá una tarjeta para definir cuánto tiempo querés reservar."}
-                      </p>
-
-                      <div className="duration-summary-meta">
-                        <span>
-                          <FaShieldAlt /> Sin cruces
-                        </span>
-                        <span>
-                          <FaCalendarCheck /> Revisar y confirmar
-                        </span>
-                      </div>
-                    </aside>
-                  </div>
-
-                  <div className="duration-footer">
-                    <p className="duration-current-selection">
-                      {formData.duration
-                        ? `Elegiste ${formatDurationOptionLabel(formData.duration)} para este turno.`
-                        : "Elegí cuánto tiempo querés reservar para continuar."}
-                    </p>
-                    <p className="duration-limit">
-                      Límite disponible para este turno:{" "}
-                      {formatDurationOptionLabel(maxAllowedDuration)}
-                    </p>
-                  </div>
-                </section>
-
-                <BookingConfirmationSummary
-                  dateLabel={confirmationDateLabel}
-                  durationLabel={confirmationDurationLabel}
-                  timeRangeLabel={confirmationTimeRangeLabel}
-                  studentName={formData.studentName}
-                  responsibleName={formData.responsibleName}
-                  responsibleRelationshipLabel={responsibleRelationshipLabel}
-                  isAdult={isAdult}
-                  educationLevel={confirmationEducationLabel}
-                  subject={formData.subject}
-                  school={formData.school}
-                  email={formData.email}
-                  phone={formData.phone}
-                  lookupHint={confirmationLookupHint}
-                />
-              </div>
-
-              <div className="step-actions space-between confirmation-stage-actions">
-                <button
-                  type="button"
-                  className="btn-neuro-secondary"
-                  onClick={goToPrev}
-                >
-                  <FaArrowLeft /> Horario
-                </button>
-                <button
-                  type="submit"
-                  className={`btn-neuro-success ${formData.duration >= 0.5 ? "ready-to-pulse" : "btn-disabled"}`}
-                  onClick={handleSubmit}
-                  disabled={
-                    loading || !formData.duration || formData.duration < 0.5
-                  }
-                >
-                  {loading ? "Procesando..." : "Confirmar Reserva"}
-                </button>
-              </div>
             </div>
           </div>
         </div>

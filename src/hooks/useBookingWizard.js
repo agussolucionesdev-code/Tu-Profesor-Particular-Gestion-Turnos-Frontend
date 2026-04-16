@@ -1,7 +1,6 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { WIZARD_STEPS } from "../constants/bookingWizard";
 import {
-  ADULT_RELATIONSHIP_VALUE,
   RESPONSIBLE_RELATIONSHIP_OTHER_VALUE,
   sanitizePersonNameAr,
   sanitizeRelationshipOtherAr,
@@ -24,15 +23,13 @@ const INITIAL_FORM_DATA = {
   duration: "",
 };
 
+const regexName = /^[A-Za-zÀ-ÿ\u00f1\u00d1\s']{3,60}$/;
+const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 export const useBookingWizard = (showToast) => {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [isAdult, setIsAdult] = useState(false);
   const [hasAttemptedNext, setHasAttemptedNext] = useState(false);
-  const [hasUnlockedAcademic, setHasUnlockedAcademic] = useState(false);
-  const [hasUnlockedComments, setHasUnlockedComments] = useState(false);
-
-  const regexName = /^[A-Za-zÀ-ÿ\u00f1\u00d1\s']{3,60}$/;
-  const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
   const isValidField = useCallback(
     (field) => {
@@ -48,16 +45,13 @@ export const useBookingWizard = (showToast) => {
             regexName.test(formData.responsibleName.trim())
           );
         case "responsibleRelationship":
-          return isAdult
-            ? true
-            : formData.responsibleRelationship !== "";
+          return isAdult ? true : formData.responsibleRelationship !== "";
         case "responsibleRelationshipOther":
-          return formData.responsibleRelationship !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
+          return formData.responsibleRelationship !==
+            RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
             ? true
             : regexName.test(formData.responsibleRelationshipOther.trim());
         case "email":
-          // Email shows "is-valid" only when non-empty AND correctly formatted.
-          // An empty email is acceptable (optional field) but not "valid" for visual purposes.
           return (
             formData.email.trim().length > 0 &&
             regexEmail.test(formData.email.trim())
@@ -78,17 +72,16 @@ export const useBookingWizard = (showToast) => {
           return false;
       }
     },
-    [formData, isAdult]
+    [formData, isAdult],
   );
 
-  // Email is optional: empty is acceptable, filled-in must be valid format
   const isEmailAcceptable = useMemo(
     () => formData.email.trim() === "" || regexEmail.test(formData.email.trim()),
-    [formData.email]
+    [formData.email],
   );
 
-  const isPersonalInfoComplete = useMemo(() => {
-    return (
+  const isPersonalInfoComplete = useMemo(
+    () =>
       isValidField("studentName") &&
       isValidField("phone") &&
       (isAdult
@@ -96,51 +89,49 @@ export const useBookingWizard = (showToast) => {
         : isValidField("responsibleName") &&
           isValidField("responsibleRelationship") &&
           isValidField("responsibleRelationshipOther")) &&
-      isEmailAcceptable
-    );
-  }, [isValidField, isAdult, isEmailAcceptable]);
+      isEmailAcceptable,
+    [isValidField, isAdult, isEmailAcceptable],
+  );
 
-  const isAcademicInfoComplete = useMemo(() => {
-    return (
+  const isAcademicInfoComplete = useMemo(
+    () =>
       isValidField("educationLevel") &&
       isValidField("yearGrade") &&
       isValidField("subject") &&
-      isValidField("school")
-    );
-  }, [isValidField]);
-
-  const canProceedToStep2 = useMemo(() => {
-    return isPersonalInfoComplete && isAcademicInfoComplete;
-  }, [isPersonalInfoComplete, isAcademicInfoComplete]);
-
-  const handleChange = useCallback(
-    (e) => {
-      const { name, value } = e.target;
-      let finalValue = value;
-
-      if (name === "studentName" || name === "responsibleName") {
-        finalValue = sanitizePersonNameAr(value);
-      }
-      if (name === "responsibleRelationshipOther") {
-        finalValue = sanitizeRelationshipOtherAr(value);
-      }
-      if (name === "phone") finalValue = formatPhoneMaskAr(value);
-      if (name === "email") finalValue = value.trimStart().toLowerCase();
-
-      setFormData((prev) => {
-        const newData = { ...prev, [name]: finalValue };
-        if (name === "educationLevel") newData.yearGrade = "";
-        if (
-          name === "responsibleRelationship" &&
-          value !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
-        ) {
-          newData.responsibleRelationshipOther = "";
-        }
-        return newData;
-      });
-    },
-    []
+      isValidField("school"),
+    [isValidField],
   );
+
+  const canProceedToStep2 = useMemo(
+    () => isPersonalInfoComplete && isAcademicInfoComplete,
+    [isPersonalInfoComplete, isAcademicInfoComplete],
+  );
+
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    let finalValue = value;
+
+    if (name === "studentName" || name === "responsibleName") {
+      finalValue = sanitizePersonNameAr(value);
+    }
+    if (name === "responsibleRelationshipOther") {
+      finalValue = sanitizeRelationshipOtherAr(value);
+    }
+    if (name === "phone") finalValue = formatPhoneMaskAr(value);
+    if (name === "email") finalValue = value.trimStart().toLowerCase();
+
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: finalValue };
+      if (name === "educationLevel") newData.yearGrade = "";
+      if (
+        name === "responsibleRelationship" &&
+        value !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
+      ) {
+        newData.responsibleRelationshipOther = "";
+      }
+      return newData;
+    });
+  }, []);
 
   const toggleAdultMode = useCallback(() => {
     const adultModeLocked =
@@ -153,13 +144,13 @@ export const useBookingWizard = (showToast) => {
 
     if (adultModeLocked) {
       showToast?.(
-        "Para pasar a alumno mayor de edad, primero limpia los datos del adulto responsable.",
+        "Para pasar a alumno mayor de edad, primero limpiá los datos del adulto responsable.",
         "info",
         {
           title: "Opción momentáneamente bloqueada",
           speak:
             "Si querés pasar a alumno mayor de edad, primero quitá los datos del adulto responsable que ya cargaste.",
-        }
+        },
       );
       return;
     }
@@ -182,8 +173,6 @@ export const useBookingWizard = (showToast) => {
     setFormData(INITIAL_FORM_DATA);
     setIsAdult(false);
     setHasAttemptedNext(false);
-    setHasUnlockedAcademic(false);
-    setHasUnlockedComments(false);
   }, []);
 
   const getFieldStateClass = useCallback(
@@ -197,17 +186,11 @@ export const useBookingWizard = (showToast) => {
           : value.length > 0;
       return hasAttemptedNext || hasStartedTyping ? "error" : "";
     },
-    [isValidField, formData, hasAttemptedNext]
+    [isValidField, formData, hasAttemptedNext],
   );
 
-  const stepProgress = useMemo(() => {
-    // Step progress is driven by the parent component's currentStep.
-    // This is a helper for external consumers that manage their own currentStep.
-    return 0;
-  }, []);
-
-  const requiredChecks = useMemo(() => {
-    return [
+  const requiredChecks = useMemo(
+    () => [
       isValidField("studentName"),
       isValidField("phone"),
       isAdult ? true : isValidField("responsibleName"),
@@ -216,56 +199,33 @@ export const useBookingWizard = (showToast) => {
       isValidField("yearGrade"),
       isValidField("subject"),
       isValidField("school"),
-    ];
-  }, [isValidField, isAdult]);
+    ],
+    [isValidField, isAdult],
+  );
 
   const completionPercent = useMemo(() => {
     const completed = requiredChecks.filter(Boolean).length;
     return Math.round((completed / requiredChecks.length) * 100);
   }, [requiredChecks]);
 
-  // Track unlock transitions so callers can react (e.g. play sounds)
-  useEffect(() => {
-    if (isPersonalInfoComplete && !hasUnlockedAcademic) {
-      setHasUnlockedAcademic(true);
-    } else if (!isPersonalInfoComplete && hasUnlockedAcademic) {
-      setHasUnlockedAcademic(false);
-    }
-  }, [isPersonalInfoComplete, hasUnlockedAcademic]);
-
-  useEffect(() => {
-    if (isAcademicInfoComplete && !hasUnlockedComments) {
-      setHasUnlockedComments(true);
-    } else if (!isAcademicInfoComplete && hasUnlockedComments) {
-      setHasUnlockedComments(false);
-    }
-  }, [isAcademicInfoComplete, hasUnlockedComments]);
-
   return {
-    // Form state
     formData,
     setFormData,
     isAdult,
     setIsAdult,
     hasAttemptedNext,
     setHasAttemptedNext,
-    hasUnlockedAcademic,
-    hasUnlockedComments,
-
-    // Validation
+    hasUnlockedAcademic: isPersonalInfoComplete,
+    hasUnlockedComments: isAcademicInfoComplete,
     isValidField,
     isEmailAcceptable,
     isPersonalInfoComplete,
     isAcademicInfoComplete,
     canProceedToStep2,
-
-    // Handlers
     handleChange,
     toggleAdultMode,
     resetForm,
     getFieldStateClass,
-
-    // UI helpers
     completionPercent,
     requiredChecks,
     WIZARD_STEPS,
