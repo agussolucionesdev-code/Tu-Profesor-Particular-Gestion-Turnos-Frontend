@@ -7,7 +7,6 @@ import {
   startTransition,
 } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -52,18 +51,20 @@ import {
 } from "react-icons/fa";
 import BookingConfirmationSummary from "./booking/BookingConfirmationSummary";
 import BookingSuccessModal from "./booking/BookingSuccessModal";
-import { BOOKING_SUPPORT_PILLS, WIZARD_STEPS } from "../constants/bookingWizard";
+import { fetchAvailability, createBooking } from "../api/bookingApi";
+import { useBookingWizard } from "../hooks/useBookingWizard";
+import {
+  BOOKING_SUPPORT_PILLS,
+  WIZARD_STEPS,
+} from "../constants/bookingWizard";
 import {
   ADULT_RELATIONSHIP_VALUE,
   formatDurationOptionLabel,
   formatDurationVoiceLabel,
-  formatPhoneMaskAr,
   formatResponsibleRelationshipLabel,
   getBookingApiMessage,
   RESPONSIBLE_RELATIONSHIP_OPTIONS,
   RESPONSIBLE_RELATIONSHIP_OTHER_VALUE,
-  sanitizePersonNameAr,
-  sanitizeRelationshipOtherAr,
 } from "../utils/bookingFormatters";
 import {
   primeVoicePlayback,
@@ -104,35 +105,39 @@ const STEP_VOICE_GUIDANCE = {
 };
 
 const BookingForm = () => {
-  const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4100";
   const supportPillIcons = [FaCheckCircle, FaWhatsapp, FaUserLock];
   const sliderWindowRef = useRef(null);
   const slideRefs = useRef({});
 
   const [currentStep, setCurrentStep] = useState(1);
   const [slideDirection, setSlideDirection] = useState("forward");
-  const [isAdult, setIsAdult] = useState(false);
-  const [formData, setFormData] = useState({
-    responsibleName: "",
-    responsibleRelationship: "",
-    responsibleRelationshipOther: "",
-    studentName: "",
-    email: "",
-    phone: "",
-    school: "",
-    educationLevel: "",
-    yearGrade: "",
-    subject: "",
-    academicSituation: "",
-    timeSlot: null,
-    duration: "",
-  });
 
   const [loading, setLoading] = useState(false);
   const [existingBookings, setExistingBookings] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const { toast, showToast } = useNeuroToast({ duration: 4500 });
+
+  const {
+    formData,
+    setFormData,
+    isAdult,
+    hasAttemptedNext,
+    setHasAttemptedNext,
+    hasUnlockedAcademic,
+    hasUnlockedComments,
+    isValidField,
+    isPersonalInfoComplete,
+    isAcademicInfoComplete,
+    canProceedToStep2,
+    handleChange,
+    toggleAdultMode,
+    resetForm,
+    getFieldStateClass,
+    completionPercent,
+    requiredChecks,
+  } = useBookingWizard(showToast);
+
   const [availableSlots, setAvailableSlots] = useState([]);
   const [sliderHeight, setSliderHeight] = useState(0);
   const [isDesktopCalendarViewport, setIsDesktopCalendarViewport] = useState(
@@ -143,12 +148,10 @@ const BookingForm = () => {
   );
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
 
-  const [hasAttemptedNext, setHasAttemptedNext] = useState(false);
-
   const formCardRef = useRef(null);
   const textareaRef = useRef(null);
-  const [hasUnlockedAcademic, setHasUnlockedAcademic] = useState(false);
-  const [hasUnlockedComments, setHasUnlockedComments] = useState(false);
+  const prevUnlockedAcademicRef = useRef(false);
+  const prevUnlockedCommentsRef = useRef(false);
 
   const playStepSound = () => {
     stepSound.volume = 0.15;
@@ -178,9 +181,8 @@ const BookingForm = () => {
 
       window.setTimeout(() => {
         const navHeight =
-          document
-            .querySelector(".navbar-elite")
-            ?.getBoundingClientRect().height ?? 0;
+          document.querySelector(".navbar-elite")?.getBoundingClientRect()
+            .height ?? 0;
         const activePanel = slideRefs.current[targetStep];
         const scrollAnchor =
           (selector ? activePanel?.querySelector(selector) : null) ||
@@ -207,7 +209,9 @@ const BookingForm = () => {
 
         // Guide Focus: Focus the first invalid or first empty field in the step
         if (targetStep === 1) {
-          const firstField = activePanel.querySelector("input, select, textarea");
+          const firstField = activePanel.querySelector(
+            "input, select, textarea",
+          );
           firstField?.focus({ preventScroll: true });
         }
       }, delay);
@@ -300,7 +304,10 @@ const BookingForm = () => {
   }, [formData.academicSituation]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return undefined;
     }
 
@@ -324,7 +331,8 @@ const BookingForm = () => {
 
     const originalOverflow = document.body.style.overflow;
     const originalPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
 
     document.body.style.overflow = "hidden";
     if (scrollbarWidth > 0) {
@@ -349,17 +357,17 @@ const BookingForm = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/bookings/availability`);
+        const res = await fetchAvailability();
         setExistingBookings(
           res.data.data.filter((b) => b.status !== "Cancelado"),
         );
       } catch (error) {
         console.error("Error fetching bookings", error);
-        showToast(getBookingApiMessage(error, API_URL), "warning");
+        showToast(getBookingApiMessage(error), "warning");
       }
     };
     fetchBookings();
-  }, [API_URL, showToast]);
+  }, [showToast]);
 
   useEffect(() => {
     if (!formData.timeSlot) return;
@@ -396,54 +404,6 @@ const BookingForm = () => {
     setAvailableSlots(slots);
   }, [formData.timeSlot, existingBookings]);
 
-  const isValidField = (field) => {
-    const regexName = /^[A-Za-zÀ-ÿ\u00f1\u00d1\s']{3,60}$/;
-    const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    switch (field) {
-      case "studentName":
-        return (
-          formData.studentName.trim().length > 0 &&
-          regexName.test(formData.studentName.trim())
-        );
-      case "responsibleName":
-        return (
-          formData.responsibleName.trim().length > 0 &&
-          regexName.test(formData.responsibleName.trim())
-        );
-      case "responsibleRelationship":
-        return isAdult
-          ? true
-          : RESPONSIBLE_RELATIONSHIP_OPTIONS.some(
-              (option) => option.value === formData.responsibleRelationship,
-            );
-      case "responsibleRelationshipOther":
-        return formData.responsibleRelationship !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
-          ? true
-          : regexName.test(formData.responsibleRelationshipOther.trim());
-      case "email":
-        return (
-          formData.email.trim().length > 0 &&
-          regexEmail.test(formData.email.trim())
-        );
-      case "phone":
-        return formData.phone.replace(/\D/g, "").length === 13;
-      case "educationLevel":
-        return formData.educationLevel !== "";
-      case "yearGrade":
-        return formData.yearGrade.trim().length > 0;
-      case "subject":
-        return formData.subject.trim().length > 0;
-      case "school":
-        return formData.school.trim().length > 0;
-      case "academicSituation":
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  const isEmailValidOrEmpty =
-    formData.email.trim() === "" || isValidField("email");
   const adultModeLocked =
     !isAdult &&
     [
@@ -451,21 +411,7 @@ const BookingForm = () => {
       formData.responsibleRelationship,
       formData.responsibleRelationshipOther,
     ].some((value) => String(value ?? "").trim().length > 0);
-  const isPersonalInfoComplete =
-    isValidField("studentName") &&
-    isValidField("phone") &&
-    (isAdult
-      ? true
-      : isValidField("responsibleName") &&
-        isValidField("responsibleRelationship") &&
-        isValidField("responsibleRelationshipOther")) &&
-    isEmailValidOrEmpty;
-  const isAcademicInfoComplete =
-    isValidField("educationLevel") &&
-    isValidField("yearGrade") &&
-    isValidField("subject") &&
-    isValidField("school");
-  const canProceedToStep2 = isPersonalInfoComplete && isAcademicInfoComplete;
+  const completedRequiredFields = requiredChecks.filter(Boolean).length;
   const currentStepInfo = WIZARD_STEPS.find((step) => step.id === currentStep);
   const nextStepInfo = WIZARD_STEPS.find((step) => step.id === currentStep + 1);
   const stepperFlowCopy = nextStepInfo
@@ -477,20 +423,6 @@ const BookingForm = () => {
       : "Vamos habilitando cada paso en orden para que la reserva quede clara, prolija y sin errores.";
   const isTimeSelected = Boolean(
     formData.timeSlot && formData.timeSlot.getHours() !== 0,
-  );
-  const requiredChecks = [
-    isValidField("studentName"),
-    isValidField("phone"),
-    isAdult ? true : isValidField("responsibleName"),
-    isAdult ? true : isValidField("responsibleRelationship"),
-    isValidField("educationLevel"),
-    isValidField("yearGrade"),
-    isValidField("subject"),
-    isValidField("school"),
-  ];
-  const completedRequiredFields = requiredChecks.filter(Boolean).length;
-  const completionPercent = Math.round(
-    (completedRequiredFields / requiredChecks.length) * 100,
   );
   const stepProgressWidth =
     ((currentStep - 1) / Math.max(WIZARD_STEPS.length - 1, 1)) * 100;
@@ -512,7 +444,10 @@ const BookingForm = () => {
             : "--:--"
         } hs`
       : "";
-  const confirmationEducationLabel = [formData.educationLevel, formData.yearGrade]
+  const confirmationEducationLabel = [
+    formData.educationLevel,
+    formData.yearGrade,
+  ]
     .filter(Boolean)
     .join(" - ");
   const confirmationLookupHint =
@@ -523,111 +458,20 @@ const BookingForm = () => {
   );
   const isConfirmationReady = Number(formData.duration) >= 0.5;
 
-  const getFieldStateClass = (field, isOptional = false) => {
-    if (isValidField(field)) return "is-valid";
-    if (isOptional && formData[field]?.trim() === "") return "";
-    const value = String(formData[field] ?? "").trim();
-    const hasStartedTyping =
-      field === "phone" ? formData.phone.replace(/\D/g, "").length >= 4 : value.length > 0;
-    return hasAttemptedNext || hasStartedTyping ? "error" : "";
-  };
+  // Play unlock sound when the hook reports a new unlock transition
+  useEffect(() => {
+    if (hasUnlockedAcademic && !prevUnlockedAcademicRef.current) {
+      playUnlockSound();
+    }
+    prevUnlockedAcademicRef.current = hasUnlockedAcademic;
+  }, [hasUnlockedAcademic]);
 
   useEffect(() => {
-    if (isPersonalInfoComplete && !hasUnlockedAcademic) {
+    if (hasUnlockedComments && !prevUnlockedCommentsRef.current) {
       playUnlockSound();
-      setHasUnlockedAcademic(true);
-    } else if (!isPersonalInfoComplete && hasUnlockedAcademic)
-      setHasUnlockedAcademic(false);
-  }, [isPersonalInfoComplete, hasUnlockedAcademic]);
-
-  useEffect(() => {
-    if (isAcademicInfoComplete && !hasUnlockedComments) {
-      playUnlockSound();
-      setHasUnlockedComments(true);
-    } else if (!isAcademicInfoComplete && hasUnlockedComments)
-      setHasUnlockedComments(false);
-  }, [isAcademicInfoComplete, hasUnlockedComments]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    let finalValue = value;
-    if (name === "studentName" || name === "responsibleName") {
-      finalValue = sanitizePersonNameAr(value);
     }
-    if (name === "responsibleRelationshipOther") {
-      finalValue = sanitizeRelationshipOtherAr(value);
-    }
-    if (name === "phone") finalValue = formatPhoneMaskAr(value);
-    if (name === "email") finalValue = value.trimStart().toLowerCase();
-    setFormData((prev) => {
-      const newData = { ...prev, [name]: finalValue };
-      if (name === "educationLevel") newData.yearGrade = "";
-      if (name === "responsibleRelationship" && value !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE) {
-        newData.responsibleRelationshipOther = "";
-      }
-      return newData;
-    });
-
-    // --- Invisible Guide Logic ---
-    // If the current field just became valid, guide the user to the next one
-    if (isValidField(name)) {
-      const fieldsOrder = [
-        "studentName",
-        "phone",
-        "responsibleName",
-        "responsibleRelationship",
-        "responsibleRelationshipOther",
-        "email",
-        "educationLevel",
-        "yearGrade",
-        "subject",
-        "school",
-      ];
-      const currentIndex = fieldsOrder.indexOf(name);
-      if (currentIndex !== -1 && currentIndex < fieldsOrder.length - 1) {
-        const nextField = fieldsOrder[currentIndex + 1];
-        // Only guide if it's the same step and the next field is not yet valid
-        if (currentStep === 1 && !isValidField(nextField)) {
-           const nextInput = document.getElementsByName(nextField)[0];
-           if (nextInput) {
-             nextInput.focus({ preventScroll: true });
-             smoothScrollToStep(currentStep, {
-               selector: `[name="${nextField}"]`,
-               delay: 100,
-             });
-           }
-        }
-      }
-    }
-  };
-
-  const toggleAdultMode = () => {
-    if (adultModeLocked) {
-      showToast(
-        "Para pasar a alumno mayor de edad, primero limpia los datos del adulto responsable.",
-        "info",
-        {
-          title: "Opción momentáneamente bloqueada",
-          speak:
-            "Si quieres pasar a alumno mayor de edad, primero quita los datos del adulto responsable que ya cargaste.",
-        },
-      );
-      return;
-    }
-
-    setIsAdult((current) => {
-      const next = !current;
-      if (next) {
-        setFormData((prev) => ({
-          ...prev,
-          responsibleName: "",
-          responsibleRelationship: "",
-          responsibleRelationshipOther: "",
-        }));
-      }
-      return next;
-    });
-  };
+    prevUnlockedCommentsRef.current = hasUnlockedComments;
+  }, [hasUnlockedComments]);
 
   const getYearGradeOptions = () => {
     const level = formData.educationLevel;
@@ -931,7 +775,9 @@ const BookingForm = () => {
     return sections
       .map((section) => ({
         ...section,
-        slots: availableSlots.filter((slot) => section.match(slot.timeObj.getHours())),
+        slots: availableSlots.filter((slot) =>
+          section.match(slot.timeObj.getHours()),
+        ),
       }))
       .filter((section) => section.slots.length > 0);
   }, [availableSlots]);
@@ -967,24 +813,8 @@ const BookingForm = () => {
 
   const resetFormAfterSuccess = () => {
     setShowModal(false);
-    setFormData({
-      responsibleName: "",
-      responsibleRelationship: "",
-      responsibleRelationshipOther: "",
-      studentName: "",
-      email: "",
-      phone: "",
-      school: "",
-      educationLevel: "",
-      yearGrade: "",
-      subject: "",
-      academicSituation: "",
-      timeSlot: null,
-      duration: "",
-    });
-    setIsAdult(false);
+    resetForm();
     setCurrentStep(1);
-    setHasAttemptedNext(false);
   };
 
   const handleSubmit = async (e) => {
@@ -1004,9 +834,10 @@ const BookingForm = () => {
         finalResponsibleRelationship === RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
           ? formData.responsibleRelationshipOther.trim()
           : "";
-      const safeEmail = formData.email.trim() !== "" ? formData.email.trim() : "";
+      const safeEmail =
+        formData.email.trim() !== "" ? formData.email.trim() : "";
 
-      const response = await axios.post(`${API_URL}/api/bookings/reserve`, {
+      const response = await createBooking({
         ...formData,
         email: safeEmail,
         responsibleName: finalResponsibleName,
@@ -1079,7 +910,7 @@ const BookingForm = () => {
       );
     } catch (error) {
       console.log("Error al reservar:", error);
-      showToast(getBookingApiMessage(error, API_URL), "error");
+      showToast(getBookingApiMessage(error), "error");
     } finally {
       setLoading(false);
     }
@@ -1090,11 +921,15 @@ const BookingForm = () => {
     primeVoicePlayback();
     try {
       await navigator.clipboard.writeText(successData.bookingCode);
-      showToast("Código copiado. Ya podés guardarlo o compartirlo.", "success", {
-        title: "Código listo",
-        detail: "Lo vas a usar después en Mis Turnos.",
-        speak: `Código ${spellCodeForVoice(successData.bookingCode)} copiado. Ya podés guardarlo con tranquilidad para gestionar el turno después.`,
-      });
+      showToast(
+        "Código copiado. Ya podés guardarlo o compartirlo.",
+        "success",
+        {
+          title: "Código listo",
+          detail: "Lo vas a usar después en Mis Turnos.",
+          speak: `Código ${spellCodeForVoice(successData.bookingCode)} copiado. Ya podés guardarlo con tranquilidad para gestionar el turno después.`,
+        },
+      );
     } catch {
       showToast(
         "No pude copiarlo automáticamente. Seleccionalo manualmente.",
@@ -1210,7 +1045,10 @@ const BookingForm = () => {
           <p className="form-subtitle">
             Completá tus datos y elegí el momento ideal para aprender.
           </p>
-          <div className="form-support-strip" aria-label="Beneficios del sistema de reserva">
+          <div
+            className="form-support-strip"
+            aria-label="Beneficios del sistema de reserva"
+          >
             {BOOKING_SUPPORT_PILLS.map((pill, index) => {
               const Icon = supportPillIcons[index];
               return (
@@ -1235,11 +1073,16 @@ const BookingForm = () => {
             <div className="journey-heading-row">
               <h3 id="journey-step-title">{currentStepInfo?.title}</h3>
               {nextStepInfo && (
-                <span className="journey-next-pill">Sigue: {nextStepInfo.label}</span>
+                <span className="journey-next-pill">
+                  Sigue: {nextStepInfo.label}
+                </span>
               )}
             </div>
             <p className="journey-one-line">{currentStepInfo?.message}</p>
-            <div className="journey-chip-row" aria-label="Claves del paso actual">
+            <div
+              className="journey-chip-row"
+              aria-label="Claves del paso actual"
+            >
               {currentStepInfo?.chips?.map((chip) => (
                 <span key={chip} className="journey-mini-chip">
                   {chip}
@@ -1247,7 +1090,10 @@ const BookingForm = () => {
               ))}
             </div>
           </div>
-          <div className="journey-meter" aria-label="Datos requeridos completos">
+          <div
+            className="journey-meter"
+            aria-label="Datos requeridos completos"
+          >
             <span>{completionPercent}%</span>
             <div className="journey-meter-track">
               <div style={{ width: `${completionPercent}%` }}></div>
@@ -1270,7 +1116,9 @@ const BookingForm = () => {
             <div className="stepper-head-copy">
               <span className="stepper-kicker">Recorrido guiado</span>
               <div className="stepper-context-row">
-                <strong className="stepper-head-title">{currentStepInfo?.label}</strong>
+                <strong className="stepper-head-title">
+                  {currentStepInfo?.label}
+                </strong>
                 <span className="stepper-current-pill">
                   {currentStep} / {WIZARD_STEPS.length}
                 </span>
@@ -1309,12 +1157,12 @@ const BookingForm = () => {
                     ? "Sigue"
                     : "Después";
               const stepHint = isCompleted
-                  ? "Tocá para volver"
-                  : isCurrent
-                    ? "Estás aquí"
-                    : isUpcoming
-                      ? "Se habilita al completar este paso"
-                      : "Aún bloqueado";
+                ? "Tocá para volver"
+                : isCurrent
+                  ? "Estás aquí"
+                  : isUpcoming
+                    ? "Se habilita al completar este paso"
+                    : "Aún bloqueado";
 
               return (
                 <button
@@ -1416,13 +1264,15 @@ const BookingForm = () => {
                       )}
                     </div>
                     <p id="studentName-help" className="field-helper">
-                      Escribilo como te gustaría verlo en el comprobante y en los avisos.
+                      Escribilo como te gustaría verlo en el comprobante y en
+                      los avisos.
                     </p>
                   </div>
                   <div className="neuro-input-group">
                     <div className="label-row">
                       <label>
-                        Número de teléfono <span className="optional">(Sin 0 ni 15)</span>{" "}
+                        Número de teléfono{" "}
+                        <span className="optional">(Sin 0 ni 15)</span>{" "}
                         <span className="required">*</span>
                       </label>
                       {hasAttemptedNext && !isValidField("phone") && (
@@ -1439,7 +1289,9 @@ const BookingForm = () => {
                         value={formData.phone}
                         onChange={handleChange}
                         inputMode="tel"
-                        aria-invalid={hasAttemptedNext && !isValidField("phone")}
+                        aria-invalid={
+                          hasAttemptedNext && !isValidField("phone")
+                        }
                         aria-describedby="phone-help"
                         placeholder="+54 9 11-2222-3333"
                       />
@@ -1448,7 +1300,8 @@ const BookingForm = () => {
                       )}
                     </div>
                     <p id="phone-help" className="field-helper">
-                      Lo usamos para recordatorios, cambios y seguimiento rápido.
+                      Lo usamos para recordatorios, cambios y seguimiento
+                      rápido.
                     </p>
                   </div>
                 </div>
@@ -1456,7 +1309,11 @@ const BookingForm = () => {
                 <div className="adult-mode-banner">
                   <div className="adult-mode-copy">
                     <span className="adult-mode-kicker">Quién reserva</span>
-                    <strong>{isAdult ? "Estás reservando para vos" : "Estás reservando para un menor"}</strong>
+                    <strong>
+                      {isAdult
+                        ? "Estás reservando para vos"
+                        : "Estás reservando para un menor"}
+                    </strong>
                     <small>
                       {isAdult
                         ? "Mantenemos esta opción siempre visible para que puedas cambiarla sin perderte."
@@ -1476,10 +1333,14 @@ const BookingForm = () => {
                       onClick={toggleAdultMode}
                     >
                       <div className="toggle-text">
-                        <span className={`toggle-pill ${isAdult ? "active" : "inactive"}`}>
+                        <span
+                          className={`toggle-pill ${isAdult ? "active" : "inactive"}`}
+                        >
                           {isAdult ? "Reserva directa" : "Con responsable"}
                         </span>
-                        <span className="toggle-title">Soy alumno mayor de edad</span>
+                        <span className="toggle-title">
+                          Soy alumno mayor de edad
+                        </span>
                         <span className="toggle-subtitle">
                           {isAdult
                             ? "Usaremos tus datos como contacto principal y podés cambiarlo cuando quieras."
@@ -1498,10 +1359,15 @@ const BookingForm = () => {
                               ? "Modo activo"
                               : "Activar"}
                         </span>
-                        <div className={`neuro-toggle ${isAdult ? "active" : ""}`}></div>
+                        <div
+                          className={`neuro-toggle ${isAdult ? "active" : ""}`}
+                        ></div>
                       </div>
                     </button>
-                    <p id="adult-mode-help" className={`adult-mode-helper ${adultModeLocked ? "locked" : ""}`}>
+                    <p
+                      id="adult-mode-help"
+                      className={`adult-mode-helper ${adultModeLocked ? "locked" : ""}`}
+                    >
                       {adultModeLocked
                         ? "Para volver a modo adulto, primero limpia los datos del adulto responsable."
                         : "Podés cambiar esta opción cuando quieras antes de avanzar."}
@@ -1509,14 +1375,17 @@ const BookingForm = () => {
                   </div>
                 </div>
 
-                <div className={`form-flex-adult ${isAdult ? "adult-self-mode" : ""}`}>
+                <div
+                  className={`form-flex-adult ${isAdult ? "adult-self-mode" : ""}`}
+                >
                   {!isAdult ? (
                     <>
                       <div className="adult-field-container">
                         <div className="neuro-input-group">
                           <div className="label-row">
                             <label>
-                              Adulto responsable <span className="required">*</span>
+                              Adulto responsable{" "}
+                              <span className="required">*</span>
                             </label>
                             {hasAttemptedNext &&
                               !isValidField("responsibleName") && (
@@ -1544,7 +1413,8 @@ const BookingForm = () => {
                             )}
                           </div>
                           <p id="responsibleName-help" className="field-helper">
-                            Puede ser madre, padre, abuelo, abuela o quien acompaña el proceso.
+                            Puede ser madre, padre, abuelo, abuela o quien
+                            acompaña el proceso.
                           </p>
                         </div>
                       </div>
@@ -1553,7 +1423,8 @@ const BookingForm = () => {
                         <div className="neuro-input-group">
                           <div className="label-row">
                             <label>
-                              Relación de parentesco <span className="required">*</span>
+                              Relación de parentesco{" "}
+                              <span className="required">*</span>
                             </label>
                             {hasAttemptedNext &&
                               !isValidField("responsibleRelationship") && (
@@ -1575,31 +1446,44 @@ const BookingForm = () => {
                               aria-describedby="responsibleRelationship-help"
                             >
                               <option value="">Seleccioná una opción</option>
-                              {RESPONSIBLE_RELATIONSHIP_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
+                              {RESPONSIBLE_RELATIONSHIP_OPTIONS.map(
+                                (option) => (
+                                  <option
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </option>
+                                ),
+                              )}
                             </select>
                             {isValidField("responsibleRelationship") && (
                               <FaCheckCircle className="valid-icon" />
                             )}
                           </div>
-                          <p id="responsibleRelationship-help" className="field-helper">
-                            Así sabrán, vos y el profesor, qué vínculo tiene quien está gestionando el turno.
+                          <p
+                            id="responsibleRelationship-help"
+                            className="field-helper"
+                          >
+                            Así sabrán, vos y el profesor, qué vínculo tiene
+                            quien está gestionando el turno.
                           </p>
                         </div>
                       </div>
 
-                      {formData.responsibleRelationship === RESPONSIBLE_RELATIONSHIP_OTHER_VALUE && (
+                      {formData.responsibleRelationship ===
+                        RESPONSIBLE_RELATIONSHIP_OTHER_VALUE && (
                         <div className="adult-field-container adult-field-container-full">
                           <div className="neuro-input-group">
                             <div className="label-row">
                               <label>
-                                ¿Cuál es el vínculo? <span className="required">*</span>
+                                ¿Cuál es el vínculo?{" "}
+                                <span className="required">*</span>
                               </label>
                               {hasAttemptedNext &&
-                                !isValidField("responsibleRelationshipOther") && (
+                                !isValidField(
+                                  "responsibleRelationshipOther",
+                                ) && (
                                   <span className="error-text">Requerido</span>
                                 )}
                             </div>
@@ -1623,28 +1507,43 @@ const BookingForm = () => {
                                 <FaCheckCircle className="valid-icon" />
                               )}
                             </div>
-                            <p id="responsibleRelationshipOther-help" className="field-helper">
-                              Escribilo tal como querés que figure en el resumen, en el mail y en el panel del profesor.
+                            <p
+                              id="responsibleRelationshipOther-help"
+                              className="field-helper"
+                            >
+                              Escribilo tal como querés que figure en el
+                              resumen, en el mail y en el panel del profesor.
                             </p>
                           </div>
                         </div>
                       )}
                     </>
                   ) : (
-                    <div className="adult-state-card" role="status" aria-live="polite">
+                    <div
+                      className="adult-state-card"
+                      role="status"
+                      aria-live="polite"
+                    >
                       <FaUserCheck />
                       <div>
                         <strong>Reserva directa</strong>
-                        <span>No hace falta completar un adulto responsable ni su parentesco.</span>
+                        <span>
+                          No hace falta completar un adulto responsable ni su
+                          parentesco.
+                        </span>
                       </div>
                     </div>
                   )}
 
                   <div className="adult-field-container">
-                    <div className="neuro-input-group" style={{ marginTop: "0" }}>
+                    <div
+                      className="neuro-input-group"
+                      style={{ marginTop: "0" }}
+                    >
                       <div className="label-row">
                         <label>
-                          {isAdult ? "Email" : "Email de contacto"} <span className="optional">(Opcional)</span>
+                          {isAdult ? "Email" : "Email de contacto"}{" "}
+                          <span className="optional">(Opcional)</span>
                         </label>
                         {hasAttemptedNext &&
                           formData.email.trim() !== "" &&
@@ -1669,9 +1568,10 @@ const BookingForm = () => {
                           aria-describedby="email-help"
                           placeholder="nombre@correo.com"
                         />
-                        {formData.email.trim() !== "" && isValidField("email") && (
-                          <FaCheckCircle className="valid-icon" />
-                        )}
+                        {formData.email.trim() !== "" &&
+                          isValidField("email") && (
+                            <FaCheckCircle className="valid-icon" />
+                          )}
                       </div>
                       <p id="email-help" className="field-helper">
                         {isAdult
@@ -1720,7 +1620,9 @@ const BookingForm = () => {
                           <option value="Secundaria Tecnica">
                             Secundaria técnica
                           </option>
-                          <option value="Terciario">Terciario / Superior</option>
+                          <option value="Terciario">
+                            Terciario / Superior
+                          </option>
                           <option value="Universitario">Universitario</option>
                         </select>
                         {isValidField("educationLevel") && (
@@ -1800,7 +1702,8 @@ const BookingForm = () => {
                     <div className="neuro-input-group">
                       <div className="label-row">
                         <label>
-                          Institución / colegio <span className="required">*</span>
+                          Institución / colegio{" "}
+                          <span className="required">*</span>
                         </label>
                         {hasAttemptedNext && !isValidField("school") && (
                           <span className="error-text">Requerido</span>
@@ -1826,8 +1729,8 @@ const BookingForm = () => {
                       </div>
                     </div>
                   </div>
-                  </div>
                 </div>
+              </div>
 
               <div
                 className={`progressive-disclosure-grid ${isAcademicInfoComplete ? "is-active" : ""}`}
@@ -1897,7 +1800,9 @@ const BookingForm = () => {
                     <div className="step-stage-main">
                       <div className="step-stage-heading">
                         <div>
-                          <span className="step-stage-kicker">Paso 2 · Fecha</span>
+                          <span className="step-stage-kicker">
+                            Paso 2 · Fecha
+                          </span>
                           <h3 className="section-title" tabIndex={-1}>
                             <FaCalendarAlt /> Elegí un día
                           </h3>
@@ -1963,8 +1868,8 @@ const BookingForm = () => {
                           </strong>
                           <p>
                             {selectedDayOnly
-                                ? "Si la cambiás, los horarios del paso siguiente se actualizan solos."
-                                : "En pantallas grandes podés abrir la vista ampliada para verla mucho más cómoda."}
+                              ? "Si la cambiás, los horarios del paso siguiente se actualizan solos."
+                              : "En pantallas grandes podés abrir la vista ampliada para verla mucho más cómoda."}
                           </p>
                         </div>
 
@@ -1980,7 +1885,8 @@ const BookingForm = () => {
                           </button>
                         ) : (
                           <span className="calendar-selection-tip">
-                            Paso siguiente: horarios. Si volvés a tocar la fecha elegida, la quitás.
+                            Paso siguiente: horarios. Si volvés a tocar la fecha
+                            elegida, la quitás.
                           </span>
                         )}
                       </div>
@@ -2019,8 +1925,8 @@ const BookingForm = () => {
                           </strong>
                           <small>
                             {selectedDayOnly
-                                ? "La reserva ya quedó enfocada en este día."
-                                : "Primero elegí el día y después te mostramos solo horarios libres."}
+                              ? "La reserva ya quedó enfocada en este día."
+                              : "Primero elegí el día y después te mostramos solo horarios libres."}
                           </small>
                         </article>
 
@@ -2029,7 +1935,9 @@ const BookingForm = () => {
                             <span className="selection-insight-icon">
                               <FaClock />
                             </span>
-                            <span className="insight-label">Horarios libres</span>
+                            <span className="insight-label">
+                              Horarios libres
+                            </span>
                           </div>
                           <strong>
                             {selectedDayOnly
@@ -2184,8 +2092,8 @@ const BookingForm = () => {
                           </strong>
                           <p>
                             {isTimeSelected
-                                ? "Ahora solo queda revisar duración, resumen y confirmar."
-                                : "Podés tocar cualquier bloque libre para marcarlo y seguir."}
+                              ? "Ahora solo queda revisar duración, resumen y confirmar."
+                              : "Podés tocar cualquier bloque libre para marcarlo y seguir."}
                           </p>
                         </div>
 
@@ -2201,7 +2109,8 @@ const BookingForm = () => {
                           </button>
                         ) : (
                           <span className="calendar-selection-tip">
-                            Paso siguiente: confirmar. Si volvés a tocar el bloque elegido, lo quitás.
+                            Paso siguiente: confirmar. Si volvés a tocar el
+                            bloque elegido, lo quitás.
                           </span>
                         )}
                       </div>
@@ -2211,7 +2120,10 @@ const BookingForm = () => {
                           {availableSlots.length > 0 ? (
                             <div className="slot-sections">
                               {slotSections.map((section) => (
-                                <section key={section.id} className="slot-section">
+                                <section
+                                  key={section.id}
+                                  className="slot-section"
+                                >
                                   <div className="slot-section-header">
                                     <div>
                                       <h4>{section.label}</h4>
@@ -2293,8 +2205,8 @@ const BookingForm = () => {
                           </strong>
                           <small>
                             {selectedDayOnly
-                                ? "Si necesitás otro día, podés volver sin perder tus datos."
-                                : "Vuelve al paso anterior para elegir la fecha."}
+                              ? "Si necesitás otro día, podés volver sin perder tus datos."
+                              : "Vuelve al paso anterior para elegir la fecha."}
                           </small>
                         </article>
 
@@ -2328,9 +2240,7 @@ const BookingForm = () => {
                             <span className="selection-insight-icon">
                               <FaLightbulb />
                             </span>
-                            <span className="insight-label">
-                              Próximo paso
-                            </span>
+                            <span className="insight-label">Próximo paso</span>
                           </div>
                           <strong>
                             {isTimeSelected
@@ -2339,8 +2249,8 @@ const BookingForm = () => {
                           </strong>
                           <small>
                             {isTimeSelected
-                                ? "En la última pantalla ajustás duración y revisás el resumen."
-                                : "Apenas elijas un horario libre, te habilitamos la confirmación."}
+                              ? "En la última pantalla ajustás duración y revisás el resumen."
+                              : "Apenas elijas un horario libre, te habilitamos la confirmación."}
                           </small>
                         </article>
                       </div>
@@ -2433,7 +2343,9 @@ const BookingForm = () => {
                     <span className="confirmation-hero-kicker">
                       Tu reserva en una mirada
                     </span>
-                    <h4>{confirmationDateLabel || "Aún falta definir el turno"}</h4>
+                    <h4>
+                      {confirmationDateLabel || "Aún falta definir el turno"}
+                    </h4>
                     <p>
                       {confirmationTimeRangeLabel
                         ? "Este es el horario que va a quedar guardado. Ajustá la duración y confirmás en un último paso, sin vueltas."
@@ -2445,7 +2357,9 @@ const BookingForm = () => {
                         <FaClock />
                         <div>
                           <span>Horario</span>
-                          <strong>{confirmationTimeRangeLabel || "Pendiente"}</strong>
+                          <strong>
+                            {confirmationTimeRangeLabel || "Pendiente"}
+                          </strong>
                         </div>
                       </div>
 
@@ -2523,7 +2437,8 @@ const BookingForm = () => {
                       aria-label="Opciones de duración"
                     >
                       {durationOptions.map((duration) => {
-                        const isSelected = Number(formData.duration) === duration;
+                        const isSelected =
+                          Number(formData.duration) === duration;
                         return (
                           <button
                             key={duration}
@@ -2572,7 +2487,7 @@ const BookingForm = () => {
                     <p className="duration-current-selection">
                       {formData.duration
                         ? `Elegiste ${formatDurationOptionLabel(formData.duration)} para este turno.`
-                          : "Elegí cuánto tiempo querés reservar para continuar."}
+                        : "Elegí cuánto tiempo querés reservar para continuar."}
                     </p>
                     <p className="duration-limit">
                       Límite disponible para este turno:{" "}
@@ -2649,12 +2564,10 @@ const BookingForm = () => {
             <div className="calendar-zoom-header">
               <div>
                 <span className="calendar-zoom-kicker">Vista ampliada</span>
-                <h3 id="calendar-zoom-title">
-                  Elegí tu fecha con más espacio
-                </h3>
+                <h3 id="calendar-zoom-title">Elegí tu fecha con más espacio</h3>
                 <p>
-                  Mostramos una grilla más grande y enfocada en un solo mes
-                  para que la selecciones con comodidad sin perder armonía visual.
+                  Mostramos una grilla más grande y enfocada en un solo mes para
+                  que la selecciones con comodidad sin perder armonía visual.
                 </p>
               </div>
 

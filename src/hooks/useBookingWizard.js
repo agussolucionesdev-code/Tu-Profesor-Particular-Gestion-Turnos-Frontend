@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { WIZARD_STEPS } from "../constants/bookingWizard";
 import {
   ADULT_RELATIONSHIP_VALUE,
@@ -24,8 +24,7 @@ const INITIAL_FORM_DATA = {
   duration: "",
 };
 
-export const useBookingWizard = (apiUrl, showToast) => {
-  const [currentStep, setCurrentStep] = useState(1);
+export const useBookingWizard = (showToast) => {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [isAdult, setIsAdult] = useState(false);
   const [hasAttemptedNext, setHasAttemptedNext] = useState(false);
@@ -57,8 +56,10 @@ export const useBookingWizard = (apiUrl, showToast) => {
             ? true
             : regexName.test(formData.responsibleRelationshipOther.trim());
         case "email":
+          // Email shows "is-valid" only when non-empty AND correctly formatted.
+          // An empty email is acceptable (optional field) but not "valid" for visual purposes.
           return (
-            formData.email.trim() === "" ||
+            formData.email.trim().length > 0 &&
             regexEmail.test(formData.email.trim())
           );
         case "phone":
@@ -80,6 +81,12 @@ export const useBookingWizard = (apiUrl, showToast) => {
     [formData, isAdult]
   );
 
+  // Email is optional: empty is acceptable, filled-in must be valid format
+  const isEmailAcceptable = useMemo(
+    () => formData.email.trim() === "" || regexEmail.test(formData.email.trim()),
+    [formData.email]
+  );
+
   const isPersonalInfoComplete = useMemo(() => {
     return (
       isValidField("studentName") &&
@@ -89,9 +96,9 @@ export const useBookingWizard = (apiUrl, showToast) => {
         : isValidField("responsibleName") &&
           isValidField("responsibleRelationship") &&
           isValidField("responsibleRelationshipOther")) &&
-      isValidField("email")
+      isEmailAcceptable
     );
-  }, [isValidField, isAdult]);
+  }, [isValidField, isAdult, isEmailAcceptable]);
 
   const isAcademicInfoComplete = useMemo(() => {
     return (
@@ -150,6 +157,8 @@ export const useBookingWizard = (apiUrl, showToast) => {
         "info",
         {
           title: "Opción momentáneamente bloqueada",
+          speak:
+            "Si querés pasar a alumno mayor de edad, primero quitá los datos del adulto responsable que ya cargaste.",
         }
       );
       return;
@@ -169,28 +178,9 @@ export const useBookingWizard = (apiUrl, showToast) => {
     });
   }, [isAdult, formData, showToast]);
 
-  const goToStep = useCallback((targetStep) => {
-    if (targetStep < 1 || targetStep > WIZARD_STEPS.length) return;
-    setCurrentStep(targetStep);
-  }, []);
-
-  const goToNext = useCallback(() => {
-    if (currentStep < WIZARD_STEPS.length) {
-      setHasAttemptedNext(true);
-      setCurrentStep((prev) => prev + 1);
-    }
-  }, [currentStep]);
-
-  const goToPrev = useCallback(() => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
-  }, [currentStep]);
-
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_DATA);
     setIsAdult(false);
-    setCurrentStep(1);
     setHasAttemptedNext(false);
     setHasUnlockedAcademic(false);
     setHasUnlockedComments(false);
@@ -211,8 +201,10 @@ export const useBookingWizard = (apiUrl, showToast) => {
   );
 
   const stepProgress = useMemo(() => {
-    return ((currentStep - 1) / Math.max(WIZARD_STEPS.length - 1, 1)) * 100;
-  }, [currentStep]);
+    // Step progress is driven by the parent component's currentStep.
+    // This is a helper for external consumers that manage their own currentStep.
+    return 0;
+  }, []);
 
   const requiredChecks = useMemo(() => {
     return [
@@ -232,6 +224,7 @@ export const useBookingWizard = (apiUrl, showToast) => {
     return Math.round((completed / requiredChecks.length) * 100);
   }, [requiredChecks]);
 
+  // Track unlock transitions so callers can react (e.g. play sounds)
   useEffect(() => {
     if (isPersonalInfoComplete && !hasUnlockedAcademic) {
       setHasUnlockedAcademic(true);
@@ -249,24 +242,30 @@ export const useBookingWizard = (apiUrl, showToast) => {
   }, [isAcademicInfoComplete, hasUnlockedComments]);
 
   return {
-    currentStep,
+    // Form state
     formData,
+    setFormData,
     isAdult,
+    setIsAdult,
     hasAttemptedNext,
+    setHasAttemptedNext,
     hasUnlockedAcademic,
     hasUnlockedComments,
+
+    // Validation
     isValidField,
+    isEmailAcceptable,
     isPersonalInfoComplete,
     isAcademicInfoComplete,
     canProceedToStep2,
+
+    // Handlers
     handleChange,
     toggleAdultMode,
-    goToStep,
-    goToNext,
-    goToPrev,
     resetForm,
     getFieldStateClass,
-    stepProgress,
+
+    // UI helpers
     completionPercent,
     requiredChecks,
     WIZARD_STEPS,
