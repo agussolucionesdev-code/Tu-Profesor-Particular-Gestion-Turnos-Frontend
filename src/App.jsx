@@ -1,16 +1,21 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   useLocation,
 } from "react-router-dom";
+import AccessibilityControls from "./components/accessibility/AccessibilityControls";
+import { UISettingsProvider } from "./components/accessibility/UISettingsContext";
 import Navbar from "./layouts/Navbar";
-import BookingForm from "./components/BookingForm";
-import AdminPanel from "./components/AdminPanel";
-import ClientPortal from "./components/ClientPortal";
 import Footer from "./layouts/Footer";
+import { bootNeuroVoice } from "./utils/neuroToast";
 import "./index.css";
+import "./styles/accessibility-system.css";
+
+const BookingForm = lazy(() => import("./components/BookingForm"));
+const AdminPanel = lazy(() => import("./components/AdminPanel"));
+const ClientPortal = lazy(() => import("./components/ClientPortal"));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -27,32 +32,56 @@ const AppContent = () => {
   const isAdminRoute = pathname === "/admin";
   const isBookingExperience = pathname === "/" || pathname === "/reservar" || pathname === "/portal";
 
+  useEffect(() => {
+    bootNeuroVoice();
+  }, []);
+
   return (
     <>
+      <a className="skip-link" href="#main-content">
+        Saltar al contenido principal
+      </a>
       <Navbar />
-      <div
+      <main
+        id="main-content"
         className={`main-content ${isAdminRoute ? "admin-page-content" : ""} ${
           isBookingExperience ? "immersive-page-content" : ""
         }`}
+        tabIndex="-1"
       >
-        <Routes>
-          <Route path="/" element={<BookingForm />} />
-          <Route path="/reservar" element={<BookingForm />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/portal" element={<ClientPortal />} />
-        </Routes>
-      </div>
+        <Suspense
+          fallback={
+            <div className="route-loader-shell" role="status" aria-live="polite">
+              <div className="route-loader-card">
+                <span className="route-loader-badge">Cargando</span>
+                <strong>Estamos preparando la experiencia</strong>
+                <p>Un momento y seguimos.</p>
+              </div>
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<BookingForm />} />
+            <Route path="/reservar" element={<BookingForm />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/portal" element={<ClientPortal />} />
+          </Routes>
+        </Suspense>
+      </main>
       {!isAdminRoute && <Footer />}
+      <AccessibilityControls />
     </>
   );
 };
 
 function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <AppContent />
-    </Router>
+    <UISettingsProvider>
+      <Router>
+        <ScrollToTop />
+        <AppContent />
+      </Router>
+    </UISettingsProvider>
   );
 }
 

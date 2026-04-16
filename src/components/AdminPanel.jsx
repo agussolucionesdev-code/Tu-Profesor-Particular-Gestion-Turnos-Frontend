@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import {
@@ -13,6 +13,7 @@ import {
   FaExclamationTriangle,
   FaEye,
   FaFilter,
+  FaIdCard,
   FaInfoCircle,
   FaLayerGroup,
   FaLightbulb,
@@ -36,14 +37,20 @@ import {
   formatLongDateLabel as formatDate,
   formatShortDateLabel as formatShortDate,
   formatTimeLabel as formatTime,
+  getBookingStatusBucket as bookingStatusBucket,
+  getBookingStatusLabel as bookingStatusLabel,
   getResponsibleDisplay as responsibleLabel,
+  getResponsibleRelationshipDisplay as responsibleRelationshipLabel,
+  getResponsibleSummary as responsibleSummary,
   isSameCalendarDay as sameDay,
   normalizeText as norm,
   toSafeDate as toDate,
 } from "../utils/bookingFormatters";
 import "./AdminPanel.css";
+import "../styles/theme-polish.css";
+import "../styles/accessibility-system.css";
 
-const STATUS_FILTERS = ["Todos", "Pendiente", "Confirmado", "Cancelado", "Finalizado"];
+const STATUS_FILTERS = ["Todos", "Confirmado", "Cancelado"];
 const VIEW_OPTIONS = [
   { id: "overview", label: "Resumen", icon: FaChartLine },
   { id: "agenda", label: "Agenda", icon: FaCalendarCheck },
@@ -74,13 +81,38 @@ const AdminPanel = () => {
   const [password, setPassword] = useState("");
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [viewBooking, setViewBooking] = useState(null);
-  const [editPrice, setEditPrice] = useState(0);
   const [editNotes, setEditNotes] = useState("");
+  const [editEvolution, setEditEvolution] = useState("");
+  const [editEmotionalState, setEditEmotionalState] = useState("");
+  const [draggedBooking, setDraggedBooking] = useState(null);
+  const [quickActionMenu, setQuickActionMenu] = useState(null);
+  const panelRef = useRef(null);
 
   const authConfig = useMemo(
     () => ({ headers: { Authorization: `Bearer ${authToken}` } }),
     [authToken],
   );
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isAuthenticated) return;
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "n" || e.key === "N") {
+          e.preventDefault();
+          window.open("/", "_blank");
+        }
+        if (e.key === "r" || e.key === "R") {
+          e.preventDefault();
+          setDataLoading(true);
+          axios.get(API_URL, authConfig)
+            .then(res => setBookings(Array.isArray(res.data.data) ? res.data.data : []))
+            .finally(() => setDataLoading(false));
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAuthenticated, API_URL, authConfig]);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -95,7 +127,7 @@ const AdminPanel = () => {
           setAuthToken("");
           setIsAuthenticated(false);
           setBookings([]);
-          alert("Tu sesion expiro. Inicia sesion nuevamente.");
+          alert("Tu sesión expiró. Inicia sesión nuevamente.");
         }
       } finally {
         setDataLoading(false);
@@ -129,7 +161,9 @@ const AdminPanel = () => {
         ].join(" "),
       );
       const matchesSearch = !term || blob.includes(term);
-      const matchesStatus = filterStatus === "Todos" || booking.status === filterStatus;
+      const matchesStatus =
+        filterStatus === "Todos" ||
+        bookingStatusBucket(booking.status) === filterStatus;
       return matchesSearch && matchesStatus;
     });
   }, [filterStatus, searchTerm, sortedBookings]);
@@ -148,11 +182,11 @@ const AdminPanel = () => {
     const stats = {
       total: enriched.length,
       pending: enriched.filter((booking) => booking.status === "Pendiente").length,
-      confirmed: enriched.filter((booking) => booking.status === "Confirmado").length,
+      confirmed: enriched.filter((booking) => bookingStatusBucket(booking.status) === "Confirmado").length,
       cancelled: enriched.filter((booking) => booking.status === "Cancelado").length,
       finalized: enriched.filter((booking) => booking.status === "Finalizado").length,
       income: enriched.reduce((sum, booking) => {
-        return booking.status === "Confirmado" || booking.status === "Finalizado"
+        return bookingStatusBucket(booking.status) === "Confirmado"
           ? sum + Number(booking.price || 0)
           : sum;
       }, 0),
@@ -176,7 +210,7 @@ const AdminPanel = () => {
     );
     const noPriceBookings = dashboard.enriched.filter(
       (booking) =>
-        (booking.status === "Confirmado" || booking.status === "Finalizado") &&
+        bookingStatusBucket(booking.status) === "Confirmado" &&
         Number(booking.price || 0) <= 0,
     );
 
@@ -208,6 +242,8 @@ const AdminPanel = () => {
           key,
           studentName: booking.studentName,
           responsibleName: responsibleLabel(booking),
+          responsibleRelationship: responsibleRelationshipLabel(booking),
+          responsibleSummary: responsibleSummary(booking),
           school: booking.school,
           educationLevel: booking.educationLevel,
           yearGrade: booking.yearGrade,
@@ -215,7 +251,7 @@ const AdminPanel = () => {
           email: booking.email,
           totalBookings: 1,
           totalIncome:
-            booking.status === "Confirmado" || booking.status === "Finalizado"
+            bookingStatusBucket(booking.status) === "Confirmado"
               ? Number(booking.price || 0)
               : 0,
           nextBooking:
@@ -227,6 +263,7 @@ const AdminPanel = () => {
             [
               booking.studentName,
               booking.responsibleName,
+              responsibleRelationshipLabel(booking),
               booking.phone,
               booking.email,
               booking.subject,
@@ -239,7 +276,7 @@ const AdminPanel = () => {
 
       existing.totalBookings += 1;
       existing.totalIncome +=
-        booking.status === "Confirmado" || booking.status === "Finalizado"
+        bookingStatusBucket(booking.status) === "Confirmado"
           ? Number(booking.price || 0)
           : 0;
       if (booking.subject) existing.subjects.add(booking.subject);
@@ -283,12 +320,12 @@ const AdminPanel = () => {
   }, [overviewData.students, searchTerm]);
 
   const heroText = useMemo(() => {
-    if (!dashboard.stats.total) return "Todavia no hay reservas cargadas.";
+    if (!dashboard.stats.total) return "Todavía no hay reservas cargadas.";
     if (dashboard.stats.pending > 0) {
-      return `Tenes ${dashboard.stats.pending} solicitudes pendientes y ${overviewData.todayBookings.length} clases en agenda para hoy.`;
+      return `Tenés ${dashboard.stats.pending} registros heredados para normalizar y ${overviewData.todayBookings.length} clases en agenda para hoy.`;
     }
     if (overviewData.todayBookings.length > 0) {
-      return `Hoy tenes ${overviewData.todayBookings.length} clases activas y ${overviewData.upcoming24h.length} movimientos en las proximas 24 horas.`;
+      return `Hoy tenés ${overviewData.todayBookings.length} clases activas y ${overviewData.upcoming24h.length} movimientos en las próximas 24 horas.`;
     }
     return "No hay urgencias activas. Es un buen momento para revisar alumnos, agenda e ingresos.";
   }, [dashboard.stats.pending, dashboard.stats.total, overviewData.todayBookings.length, overviewData.upcoming24h.length]);
@@ -306,7 +343,7 @@ const AdminPanel = () => {
         setIsAuthenticated(true);
       }
     } catch (error) {
-      console.error("Error de autenticacion:", error);
+      console.error("Error de autenticación:", error);
       alert("Credenciales incorrectas.");
     } finally {
       setLoading(false);
@@ -326,7 +363,7 @@ const AdminPanel = () => {
 
   const sendWhatsApp = (booking) => {
     if (!booking.phone) {
-      alert("Este registro no tiene WhatsApp valido.");
+      alert("Este registro no tiene un teléfono válido para WhatsApp.");
       return;
     }
 
@@ -335,7 +372,7 @@ const AdminPanel = () => {
     const start = toDate(booking.timeSlot);
     const when = start ? `${formatDate(start)} a las ${formatTime(start)} hs` : "fecha pendiente";
     const name = booking.studentName || "Alumno";
-    const message = `Hola ${name}, soy Agustin Sosa. Te escribo por tu turno de ${booking.subject} previsto para ${when}.`;
+    const message = `Hola ${name}, soy Agustín Sosa. Te escribo por tu turno de ${booking.subject} previsto para ${when}.`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
     setSentMessages((current) => ({ ...current, [booking._id]: true }));
   };
@@ -344,8 +381,9 @@ const AdminPanel = () => {
     try {
       const payload = {
         status: selectedBooking.status,
-        price: Number(editPrice),
         notes: editNotes,
+        studentEvolution: editEvolution,
+        emotionalState: editEmotionalState,
       };
       await axios.put(`${API_URL}/${selectedBooking._id}`, payload, authConfig);
       setBookings((current) =>
@@ -360,7 +398,7 @@ const AdminPanel = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Estas seguro de eliminar esta reserva?")) return;
+    if (!window.confirm("¿Estás seguro de eliminar esta reserva?")) return;
     try {
       await axios.delete(`${API_URL}/${id}`, authConfig);
       setBookings((current) => current.filter((booking) => booking._id !== id));
@@ -369,8 +407,52 @@ const AdminPanel = () => {
     }
   };
 
+  const handleDragStart = (e, booking) => {
+    setDraggedBooking(booking);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", booking._id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = async (e, targetDate) => {
+    e.preventDefault();
+    if (!draggedBooking || !targetDate) return;
+    
+    const originalDate = new Date(draggedBooking.timeSlot);
+    const newDate = new Date(targetDate);
+    newDate.setHours(originalDate.getHours(), originalDate.getMinutes());
+    
+    try {
+      await axios.put(
+        `${API_URL}/${draggedBooking._id}`,
+        { timeSlot: newDate.toISOString() },
+        authConfig
+      );
+      setBookings((current) =>
+        current.map((b) =>
+          b._id === draggedBooking._id ? { ...b, timeSlot: newDate.toISOString() } : b
+        )
+      );
+      setDraggedBooking(null);
+    } catch {
+      alert("No se pudo reprogramar el turno.");
+    }
+  };
+
+  const openMercadoPago = (booking) => {
+    const amount = booking.price || 0;
+    const description = `Clase particular - ${booking.studentName} - ${booking.subject}`;
+    const externalRef = booking.bookingCode;
+    const mpUrl = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=PLACEHOLDER&external_reference=${externalRef}&description=${encodeURIComponent(description)}&back_url=${encodeURIComponent(process.env.FRONTEND_URL || window.location.origin)}`;
+    window.open(mpUrl, "_blank", "noopener,noreferrer");
+  };
+
   const handleDeleteAll = async () => {
-    if (!window.confirm("Estas por borrar toda la base de reservas. Continuar?")) return;
+    if (!window.confirm("Estás por borrar toda la base de reservas. ¿Continuar?")) return;
     const confirmation = prompt("Escribe ELIMINAR para confirmar:");
     if (confirmation !== "ELIMINAR") return;
     setDataLoading(true);
@@ -387,13 +469,53 @@ const AdminPanel = () => {
   if (!isAuthenticated) {
     return (
       <div className="admin-login-shell">
+        <div className="admin-login-layout">
+          <section className="admin-login-intro" aria-label="Beneficios del panel">
+            <span className="admin-login-kicker">Gestión interna</span>
+            <h1>Un panel claro para decidir rápido y sin ruido</h1>
+            <p>
+              La idea es que, apenas entres, tengas agenda, alumnos y
+              seguimiento en una interfaz legible, ordenada y fácil de recorrer
+              incluso en jornadas largas.
+            </p>
+
+            <div className="admin-login-benefits">
+              <article className="admin-login-benefit">
+                <FaCalendarCheck />
+                <strong>Agenda del día visible</strong>
+                <p>Prioriza lo urgente y te deja ver rápido las próximas clases.</p>
+              </article>
+
+              <article className="admin-login-benefit">
+                <FaUsers />
+                <strong>Seguimiento por alumno</strong>
+                <p>Encontrás responsables, historial y contexto sin perder foco.</p>
+              </article>
+
+              <article className="admin-login-benefit">
+                <FaWhatsapp />
+                <strong>Mensajes y acción rápida</strong>
+                <p>Contactás y actualizás estados desde el mismo flujo de trabajo.</p>
+              </article>
+            </div>
+
+            <div className="admin-login-trust">
+              <FaInfoCircle />
+              <p>
+                Este acceso queda pensado solo para la gestión del profesor, con
+                lectura reforzada, buen contraste y una jerarquía visual más
+                descansada.
+              </p>
+            </div>
+          </section>
+
         <div className="admin-login-card">
           <div className="admin-login-mark">
             <FaLock />
           </div>
           <span className="admin-login-eyebrow">Panel del profesor</span>
           <h2>Entrar al centro de control</h2>
-          <p>Gestiona turnos, agenda, alumnos y seguimiento desde un solo lugar.</p>
+          <p>Gestioná turnos, agenda, alumnos y seguimiento desde un solo lugar.</p>
 
           <label className="admin-field">
             <span>Usuario</span>
@@ -407,11 +529,11 @@ const AdminPanel = () => {
           </label>
 
           <label className="admin-field">
-            <span>Contrasena</span>
+            <span>Contraseña</span>
             <input
               className="admin-input"
               type="password"
-              placeholder="Contrasena"
+              placeholder="Contraseña"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && handleLogin()}
@@ -421,6 +543,7 @@ const AdminPanel = () => {
           <button className="admin-primary-btn" onClick={handleLogin} disabled={loading}>
             {loading ? <FaSpinner className="spinner" /> : "Ingresar"}
           </button>
+          </div>
         </div>
       </div>
     );
@@ -432,7 +555,7 @@ const AdminPanel = () => {
         <div className="admin-brand-panel">
           <div className="admin-brand-badge">AS</div>
           <div>
-            <strong>Agustin Sosa</strong>
+            <strong>Agustín Sosa</strong>
             <span>Centro de control</span>
           </div>
         </div>
@@ -444,7 +567,7 @@ const AdminPanel = () => {
           <div className="sidebar-inline-stats">
             <div>
               <strong>{dashboard.stats.pending}</strong>
-              <span>Pendientes</span>
+              <span>Legado</span>
             </div>
             <div>
               <strong>{overviewData.students.length}</strong>
@@ -475,7 +598,7 @@ const AdminPanel = () => {
           <div className="sidebar-alert-list">
             <div>
               <FaBell />
-              <span>{overviewData.upcoming24h.length} avisos proximos</span>
+              <span>{overviewData.upcoming24h.length} avisos próximos</span>
             </div>
             <div>
               <FaMoneyBillWave />
@@ -498,7 +621,7 @@ const AdminPanel = () => {
           }}
         >
           <FaSignOutAlt />
-          Cerrar sesion
+          Cerrar sesión
         </button>
       </aside>
 
@@ -538,9 +661,9 @@ const AdminPanel = () => {
               <FaExclamationTriangle />
             </div>
             <div>
-              <span>Solicitudes pendientes</span>
-              <strong>{dashboard.stats.pending}</strong>
-              <small>{overviewData.upcoming24h.length} proximas 24 hs</small>
+              <span>Agenda activa</span>
+              <strong>{dashboard.stats.confirmed}</strong>
+              <small>{overviewData.upcoming24h.length} próximas 24 hs</small>
             </div>
           </article>
           <article className="admin-kpi-card">
@@ -558,10 +681,10 @@ const AdminPanel = () => {
               <FaChartLine />
             </div>
             <div>
-              <span>Conversion de agenda</span>
+              <span>Conversión de agenda</span>
               <strong>
                 {dashboard.stats.total
-                  ? Math.round(((dashboard.stats.confirmed + dashboard.stats.finalized) / dashboard.stats.total) * 100)
+                  ? Math.round((dashboard.stats.confirmed / dashboard.stats.total) * 100)
                   : 0}
                 %
               </strong>
@@ -573,12 +696,42 @@ const AdminPanel = () => {
         {activeView === "overview" && (
           <>
             <section className="admin-content-grid two-columns">
+              <article className="admin-card next-class-widget">
+                <div className="admin-card-header">
+                  <div>
+                    <span className="card-kicker">Siguiente Clase</span>
+                    <h3>Próximo Encuentro</h3>
+                  </div>
+                </div>
+                <div className="next-class-details">
+                  {overviewData.upcomingBookings.length === 0 ? (
+                    <p className="empty-copy">No hay clases programadas próximamente.</p>
+                  ) : (
+                    <>
+                      <div className="next-class-info">
+                        <strong>{overviewData.upcomingBookings[0].studentName}</strong>
+                        <span>{overviewData.upcomingBookings[0].subject}</span>
+                        <div className="next-class-time">
+                          <FaRegClock /> {overviewData.upcomingBookings[0].start ? `${formatDate(overviewData.upcomingBookings[0].start)} a las ${formatTime(overviewData.upcomingBookings[0].start)} hs` : "--"}
+                        </div>
+                      </div>
+                      <button 
+                        className="admin-primary-btn slim" 
+                        onClick={() => sendWhatsApp(overviewData.upcomingBookings[0])}
+                      >
+                        <FaWhatsapp /> Contactar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </article>
+
               <article className="admin-card">
                 <div className="admin-card-header">
                   <div>
                     <span className="card-kicker">Pulso semanal</span>
-                    <h3>Movimiento de los proximos 7 dias</h3>
-                  </div>
+                    <h3>Movimiento de los próximos 7 días</h3>
+                    </div>
                 </div>
                 <div className="admin-bars-chart">
                   {overviewData.weekFlow.map((item) => (
@@ -600,17 +753,19 @@ const AdminPanel = () => {
                   ))}
                 </div>
               </article>
+            </section>
 
+            <section className="admin-content-grid two-columns">
               <article className="admin-card">
                 <div className="admin-card-header">
                   <div>
                     <span className="card-kicker">Demanda</span>
-                    <h3>Materias mas solicitadas</h3>
+                    <h3>Materias más solicitadas</h3>
                   </div>
                 </div>
                 <div className="admin-progress-list">
                   {overviewData.topSubjects.length === 0 ? (
-                    <p className="empty-copy">Todavia no hay materias registradas.</p>
+                    <p className="empty-copy">Todavía no hay materias registradas.</p>
                   ) : (
                     overviewData.topSubjects.map((subject) => (
                       <div key={subject.label} className="progress-row">
@@ -638,24 +793,24 @@ const AdminPanel = () => {
                 <div className="admin-card-header">
                   <div>
                     <span className="card-kicker">Prioridades</span>
-                    <h3>Que requiere tu atencion</h3>
+                    <h3>Qué requiere tu atención</h3>
                   </div>
                 </div>
                 <div className="admin-priority-stack">
                   <div className="priority-card warning">
-                    <strong>Confirmaciones pendientes</strong>
-                    <span>{dashboard.stats.pending}</span>
-                    <p>Las solicitudes nuevas quedan a la vista para que decidas rapido.</p>
+                    <strong>Reservas confirmadas</strong>
+                    <span>{dashboard.stats.confirmed}</span>
+                    <p>Aquí ves el volumen real de la agenda activa, sin depender de confirmaciones manuales.</p>
                   </div>
                   <div className="priority-card info">
                     <strong>Clases para hoy</strong>
                     <span>{overviewData.todayBookings.length}</span>
-                    <p>Tu agenda diaria ya esta resumida para abrir el panel y saber donde estas parado.</p>
+                    <p>Tu agenda diaria ya está resumida para abrir el panel y saber dónde estás parado.</p>
                   </div>
                   <div className="priority-card success">
                     <strong>Cobros a completar</strong>
                     <span>{overviewData.noPriceBookings.length}</span>
-                    <p>Conviene cargar el valor apenas cerras cada clase para no perder trazabilidad.</p>
+                    <p>Conviene cargar el valor apenas cerrás cada clase para no perder trazabilidad.</p>
                   </div>
                 </div>
               </article>
@@ -664,7 +819,7 @@ const AdminPanel = () => {
                 <div className="admin-card-header">
                   <div>
                     <span className="card-kicker">Agenda de hoy</span>
-                    <h3>Turnos del dia</h3>
+                    <h3>Turnos del día</h3>
                   </div>
                 </div>
                 <div className="admin-agenda-list">
@@ -691,18 +846,18 @@ const AdminPanel = () => {
                 <div className="admin-card-header">
                   <div>
                     <span className="card-kicker">Actividad reciente</span>
-                    <h3>Ultimos movimientos</h3>
+                  <h3>Últimos movimientos</h3>
                   </div>
                 </div>
                 <div className="admin-activity-list">
                   {overviewData.recentActivity.length === 0 ? (
-                    <p className="empty-copy">Todavia no hay actividad para mostrar.</p>
+                    <p className="empty-copy">Todavía no hay actividad para mostrar.</p>
                   ) : (
                     overviewData.recentActivity.map((booking) => (
                       <button key={booking._id} type="button" className="activity-item" onClick={() => setViewBooking(booking)}>
                         <div className="activity-copy">
                           <strong>{booking.studentName}</strong>
-                          <span>{booking.subject} · {booking.status}</span>
+                          <span>{booking.subject} · {bookingStatusLabel(booking.status)}</span>
                         </div>
                         <small>{booking.start ? `${formatShortDate(booking.start)} ${formatTime(booking.start)}` : "--"}</small>
                       </button>
@@ -719,13 +874,13 @@ const AdminPanel = () => {
             <article className="admin-card">
               <div className="admin-card-header">
                 <div>
-                  <span className="card-kicker">Proximas 24 horas</span>
+                  <span className="card-kicker">Próximas 24 horas</span>
                   <h3>Seguimiento inmediato</h3>
                 </div>
               </div>
               <div className="timeline-list">
                 {overviewData.upcoming24h.length === 0 ? (
-                  <p className="empty-copy">No hay clases ni recordatorios urgentes en las proximas 24 horas.</p>
+                  <p className="empty-copy">No hay clases ni recordatorios urgentes en las próximas 24 horas.</p>
                 ) : (
                   overviewData.upcoming24h.map((booking) => (
                     <div key={booking._id} className="timeline-item">
@@ -746,13 +901,13 @@ const AdminPanel = () => {
             <article className="admin-card">
               <div className="admin-card-header">
                 <div>
-                  <span className="card-kicker">Pendientes vencidos</span>
-                  <h3>Solicitudes a resolver</h3>
+                  <span className="card-kicker">Estados heredados</span>
+                  <h3>Registros para normalizar</h3>
                 </div>
               </div>
               <div className="timeline-list">
                 {overviewData.overduePending.length === 0 ? (
-                  <p className="empty-copy">No hay solicitudes atrasadas.</p>
+                  <p className="empty-copy">No hay registros pendientes heredados.</p>
                 ) : (
                   overviewData.overduePending.map((booking) => (
                     <div key={booking._id} className="timeline-item urgent">
@@ -787,22 +942,23 @@ const AdminPanel = () => {
             </div>
             <div className="students-grid">
               {filteredStudents.length === 0 ? (
-                <p className="empty-copy">No hay alumnos que coincidan con la busqueda actual.</p>
+                  <p className="empty-copy">No hay alumnos que coincidan con la búsqueda actual.</p>
               ) : (
                 filteredStudents.map((student) => (
                   <article key={student.key} className="student-card">
                     <div className="student-card-top">
                       <div>
                         <strong>{student.studentName}</strong>
-                        <span>{student.responsibleName}</span>
+                        <span>{student.responsibleSummary}</span>
                       </div>
                       <span className="student-metric">{student.totalBookings} turnos</span>
                     </div>
                     <div className="student-meta-list">
-                      <div><FaSchool /><span>{student.school || "Institucion sin cargar"}</span></div>
-                      <div><FaLayerGroup /><span>{student.educationLevel || "Nivel"} · {student.yearGrade || "Ano"}</span></div>
+                      <div><FaIdCard /><span>{student.responsibleRelationship || "Vínculo sin cargar"}</span></div>
+                      <div><FaSchool /><span>{student.school || "Institución sin cargar"}</span></div>
+                      <div><FaLayerGroup /><span>{student.educationLevel || "Nivel"} · {student.yearGrade || "Año"}</span></div>
                       <div><FaBookOpen /><span>{student.subjects.join(", ") || "Materia sin definir"}</span></div>
-                      <div><FaCalendarAlt /><span>{student.nextBooking ? `Proximo: ${formatShortDate(student.nextBooking)} ${formatTime(student.nextBooking)} hs` : "Sin proximo turno"}</span></div>
+                      <div><FaCalendarAlt /><span>{student.nextBooking ? `Próximo: ${formatShortDate(student.nextBooking)} ${formatTime(student.nextBooking)} hs` : "Sin próximo turno"}</span></div>
                     </div>
                     <div className="student-card-footer">
                       <div>
@@ -847,7 +1003,7 @@ const AdminPanel = () => {
                 <FaSearch />
                 <input
                   type="text"
-                  placeholder="Buscar alumno, codigo, responsable o contacto..."
+                  placeholder="Buscar alumno, código, responsable, parentesco o contacto..."
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                 />
@@ -878,7 +1034,7 @@ const AdminPanel = () => {
                   <thead>
                     <tr>
                       <th>Estado</th>
-                      <th>Codigo</th>
+                      <th>Código</th>
                       <th>Alumno</th>
                       <th>Horario</th>
                       <th>Contacto</th>
@@ -894,9 +1050,9 @@ const AdminPanel = () => {
                     ) : (
                       filteredBookings.map((booking) => (
                         <tr key={booking._id} className={booking.status === "Cancelado" ? "row-cancelled" : ""}>
-                          <td><span className={`status-pill ${booking.status}`}>{booking.status}</span></td>
+                          <td><span className={`status-pill ${bookingStatusLabel(booking.status)}`}>{bookingStatusLabel(booking.status)}</span></td>
                           <td><span className="code-mono">{booking.bookingCode}</span></td>
-                          <td><div className="table-student"><strong>{booking.studentName}</strong><span>{booking.subject}</span></div></td>
+                          <td><div className="table-student"><strong>{booking.studentName}</strong><span>{responsibleRelationshipLabel(booking)} · {booking.subject}</span></div></td>
                           <td><div className="table-date"><span><FaCalendarAlt />{booking.timeSlot ? formatShortDate(toDate(booking.timeSlot)) : "--"}</span><span><FaRegClock />{booking.timeSlot ? `${formatTime(toDate(booking.timeSlot))} hs` : "--"}</span></div></td>
                           <td>
                             <button type="button" onClick={() => sendWhatsApp(booking)} className={`admin-whatsapp-btn ${sentMessages[booking._id] ? "sent" : ""}`}>
@@ -913,7 +1069,7 @@ const AdminPanel = () => {
                                 </button>
                               )}
                               <button type="button" className="icon-action neutral" title="Ver ficha" onClick={() => setViewBooking(booking)}><FaEye /></button>
-                              <button type="button" className="icon-action info" title="Editar" onClick={() => { setSelectedBooking(booking); setEditPrice(booking.price || 0); setEditNotes(booking.notes || ""); }}><FaEdit /></button>
+                              <button type="button" className="icon-action info" title="Editar" onClick={() => { setSelectedBooking(booking); setEditNotes(booking.notes || ""); setEditEvolution(booking.studentEvolution || ""); setEditEmotionalState(booking.emotionalState || ""); }}><FaEdit /></button>
                               <button type="button" className="icon-action danger" title="Eliminar" onClick={() => handleDelete(booking._id)}><FaTrashAlt /></button>
                             </div>
                           </td>
@@ -939,45 +1095,54 @@ const AdminPanel = () => {
               <span className="code-mono">{selectedBooking.bookingCode}</span>
             </div>
 
-            <div className="admin-modal-body">
-              <label className="admin-field">
-                <span>Estado</span>
-                <select
-                  className="admin-input"
-                  value={selectedBooking.status}
-                  onChange={(event) =>
-                    setSelectedBooking({ ...selectedBooking, status: event.target.value })
-                  }
-                >
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Confirmado">Confirmado</option>
-                  <option value="Finalizado">Finalizado</option>
-                  <option value="Cancelado">Cancelado</option>
-                </select>
-              </label>
+<div className="admin-modal-body">
+  <label className="admin-field">
+    <span>Estado</span>
+    <select
+      className="admin-input"
+      value={bookingStatusLabel(selectedBooking.status)}
+      onChange={(event) =>
+        setSelectedBooking({ ...selectedBooking, status: event.target.value })
+      }
+    >
+      <option value="Confirmado">Confirmado</option>
+      <option value="Cancelado">Cancelado</option>
+    </select>
+  </label>
 
-              <label className="admin-field">
-                <span>Valor cobrado</span>
-                <input
-                  type="number"
-                  className="admin-input"
-                  value={editPrice}
-                  onChange={(event) => setEditPrice(event.target.value)}
-                  placeholder="Ej: 12000"
-                />
-              </label>
+  <label className="admin-field">
+    <span>Notas privadas</span>
+    <textarea
+      className="admin-input admin-textarea"
+      rows="4"
+      value={editNotes}
+      onChange={(event) => setEditNotes(event.target.value)}
+      placeholder="Seguimiento, forma de pago, temas a reforzar..."
+    />
+  </label>
 
-              <label className="admin-field">
-                <span>Notas privadas</span>
-                <textarea
-                  className="admin-input admin-textarea"
-                  rows="5"
-                  value={editNotes}
-                  onChange={(event) => setEditNotes(event.target.value)}
-                  placeholder="Seguimiento, forma de pago, temas a reforzar..."
-                />
-              </label>
-            </div>
+  <label className="admin-field">
+    <span>Evolución del alumno</span>
+    <textarea
+      className="admin-input admin-textarea"
+      rows="5"
+      value={editEvolution}
+      onChange={(event) => setEditEvolution(event.target.value)}
+      placeholder="¿Qué avances ha tenido? Temas superados, dificultades actuales..."
+    />
+  </label>
+
+  <label className="admin-field">
+    <span>Estado emocional y actitudinal</span>
+    <textarea
+      className="admin-input admin-textarea"
+      rows="3"
+      value={editEmotionalState}
+      onChange={(event) => setEditEmotionalState(event.target.value)}
+      placeholder="¿Cómo se siente el alumno? Motivación, estrés, actitud ante el estudio..."
+    />
+  </label>
+</div>
 
             <div className="admin-modal-footer">
               <button type="button" className="admin-secondary-btn" onClick={() => setSelectedBooking(null)}>
@@ -1004,47 +1169,58 @@ const AdminPanel = () => {
                   <h3>{viewBooking.studentName}</h3>
                 </div>
               </div>
-              <span className={`status-pill ${viewBooking.status}`}>{viewBooking.status}</span>
+              <span className={`status-pill ${bookingStatusLabel(viewBooking.status)}`}>{bookingStatusLabel(viewBooking.status)}</span>
             </div>
 
-            <div className="admin-modal-body">
-              <div className="admin-detail-grid">
-                <article className="detail-card">
-                  <h4><FaInfoCircle />Contacto</h4>
-                  <p><strong>Responsable</strong><span>{responsibleLabel(viewBooking)}</span></p>
-                  <p><strong>WhatsApp</strong><span>{viewBooking.phone || "No informado"}</span></p>
-                  <p><strong>Email</strong><span>{viewBooking.email || "No informado"}</span></p>
-                </article>
+<div className="admin-modal-body">
+  <div className="admin-detail-grid">
+    <article className="detail-card">
+      <h4><FaInfoCircle />Contacto</h4>
+      <p><strong>Responsable</strong><span>{responsibleLabel(viewBooking)}</span></p>
+      <p><strong>Parentesco</strong><span>{responsibleRelationshipLabel(viewBooking)}</span></p>
+      <p><strong>Teléfono</strong><span>{viewBooking.phone || "No informado"}</span></p>
+      <p><strong>Email</strong><span>{viewBooking.email || "No informado"}</span></p>
+    </article>
 
-                <article className="detail-card">
-                  <h4><FaSchool />Perfil academico</h4>
-                  <p><strong>Institucion</strong><span>{viewBooking.school || "No especificada"}</span></p>
-                  <p><strong>Nivel</strong><span>{viewBooking.educationLevel || "Sin dato"}</span></p>
-                  <p><strong>Ano / grado</strong><span>{viewBooking.yearGrade || "Sin dato"}</span></p>
-                  <p><strong>Materia</strong><span>{viewBooking.subject || "Sin materia"}</span></p>
-                </article>
-              </div>
+    <article className="detail-card">
+      <h4><FaSchool />Perfil académico</h4>
+      <p><strong>Institución</strong><span>{viewBooking.school || "No especificada"}</span></p>
+      <p><strong>Nivel</strong><span>{viewBooking.educationLevel || "Sin dato"}</span></p>
+      <p><strong>Año / grado</strong><span>{viewBooking.yearGrade || "Sin dato"}</span></p>
+      <p><strong>Materia</strong><span>{viewBooking.subject || "Sin materia"}</span></p>
+    </article>
+  </div>
 
-              <article className="detail-card full">
-                <h4><FaCalendarAlt />Turno agendado</h4>
-                <p><strong>Fecha</strong><span>{viewBooking.timeSlot ? formatDate(toDate(viewBooking.timeSlot)) : "No disponible"}</span></p>
-                <p><strong>Horario</strong><span>{viewBooking.timeSlot ? `${formatTime(toDate(viewBooking.timeSlot))} hs` : "--"}</span></p>
-                <p><strong>Duracion</strong><span>{viewBooking.duration || 1} hora(s)</span></p>
-                <p><strong>Valor</strong><span>{money(viewBooking.price || 0)}</span></p>
-              </article>
+  <article className="detail-card full">
+    <h4><FaCalendarAlt />Turno agendado</h4>
+    <p><strong>Fecha</strong><span>{viewBooking.timeSlot ? formatDate(toDate(viewBooking.timeSlot)) : "No disponible"}</span></p>
+    <p><strong>Horario</strong><span>{viewBooking.timeSlot ? `${formatTime(toDate(viewBooking.timeSlot))} hs` : "--"}</span></p>
+      <p><strong>Duración</strong><span>{viewBooking.duration || 1} hora(s)</span></p>
+    <p><strong>Valor</strong><span>{money(viewBooking.price || 0)}</span></p>
+  </article>
 
-              <article className="detail-card full note">
-                <h4><FaLightbulb />Contexto del alumno</h4>
-                <p className="stacked">{viewBooking.academicSituation || "No dejo comentarios adicionales en el momento de reservar."}</p>
-              </article>
+  <article className="detail-card full note">
+    <h4><FaLightbulb />Contexto del alumno</h4>
+    <p className="stacked">{viewBooking.academicSituation || "No dejó comentarios adicionales en el momento de reservar."}</p>
+  </article>
 
-              {viewBooking.notes && (
-                <article className="detail-card full private">
-                  <h4><FaLock />Notas privadas</h4>
-                  <p className="stacked">{viewBooking.notes}</p>
-                </article>
-              )}
-            </div>
+  <article className="detail-card full">
+    <h4><FaChartLine /> Evolución Pedagógica</h4>
+    <p className="stacked">{viewBooking.studentEvolution || "Sin registros de evolución aún."}</p>
+  </article>
+
+  <article className="detail-card full">
+    <h4><FaUserTie /> Estado Emocional y Actitudinal</h4>
+    <p className="stacked">{viewBooking.emotionalState || "Sin registros sobre el estado emocional."}</p>
+  </article>
+
+  {viewBooking.notes && (
+    <article className="detail-card full private">
+      <h4><FaLock />Notas privadas</h4>
+      <p className="stacked">{viewBooking.notes}</p>
+    </article>
+  )}
+</div>
 
             <div className="admin-modal-footer">
               <button type="button" className="admin-secondary-btn" onClick={() => setViewBooking(null)}>

@@ -45,3 +45,4 @@ Solo las variables que empiezan con `VITE_` quedan expuestas al frontend.
 Archivo incluido:
 
 - `vercel.json`: hace rewrite de SPA para que `/admin` y `/portal` no fallen al refrescar.
+# Tu-Profesor-Particular-Gestion-Turnos-Frontend

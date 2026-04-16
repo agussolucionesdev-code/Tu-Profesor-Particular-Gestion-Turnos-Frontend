@@ -1,29 +1,51 @@
 :root {
+  --font-size-base: 17px;
+  --font-size-caption: 0.92rem;
+  --font-size-eyebrow: 0.82rem;
+  --font-size-label: 0.98rem;
+  --line-height-reading: 1.65;
   /* --- Paleta de Marca AgustÃ­n Sosa --- */
 
   /* Azul Noche (Base SÃ³lida y Autoridad) */
-  --color-primary: #1b263b;
-  --color-primary-dark: #0d1b2a;
+  --brand-navy: #204060;
+  --brand-navy-deep: #183858;
+  --brand-navy-soft: #2b5478;
+  --brand-green: #589860;
+  --brand-green-deep: #4a8452;
+  --brand-green-soft: #edf6ee;
+  --color-primary: var(--brand-navy);
+  --color-primary-dark: var(--brand-navy-deep);
 
   /* Verde Ã‰xito (Check, Estrellas y Acciones) */
-  --color-accent: #4caf50;
-  --color-accent-hover: #43a047;
+  --color-accent: var(--brand-green);
+  --color-accent-hover: var(--brand-green-deep);
 
   /* Fondos y Textos */
-  --color-bg-light: #f8f9fa; /* Gris humo muy suave para no cansar la vista */
-  --color-text-main: #1f2937;
-  --color-text-muted: #6b7280;
+  --color-bg-light: #F8FAFC; /* Slate-50: Limpio y profesional */
+  --color-surface-soft: #F1F5F9; /* Slate-100 */
+  --color-surface-muted: #FFFFFF;
+  --color-text-main: #0F172A; /* Slate-900: Contraste alto y legible */
+  --color-text-muted: #475569; /* Slate-600 */
+  --color-text-soft: #94A3B8; /* Slate-400 */
   --color-white: #ffffff;
 
-  /* --- Efectos y Sombras (La "Base SÃ³lida") --- */
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-solid: 0px 10px 0px 0px var(--color-primary-dark); /* Efecto 3D sutil */
-  --border-radius: 12px;
+  /* --- Efectos y Sombras (Sutiles y Difusas) --- */
+  --border-soft: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.15);
+  --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.04);
+  --shadow-elevated: 0 20px 50px rgba(15, 23, 42, 0.08);
+  --shadow-solid: 0 4px 0 0 rgba(15, 23, 42, 0.05);
+  --border-radius: 24px; /* Bordes más orgánicos y modernos */
+  --scrollbar-size: 10px;
+  --scrollbar-track: #F1F5F9;
+  --scrollbar-thumb: #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+  --scrollbar-border: transparent;
+  --scrollbar-shadow: none;
 
   /* --- Transiciones --- */
   --transition-fast: all 0.2s ease-in-out;
-  --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 *,
@@ -33,29 +55,65 @@
 }
 
 [data-theme="dark"] {
-  --color-primary: #d1fae5;
-  --color-primary-dark: #064e3b;
-  --color-accent: #34d399;
-  --color-accent-hover: #6ee7b7;
-  --color-bg-light: #07111f;
-  --color-text-main: #e5eef7;
-  --color-text-muted: #94a3b8;
-  --color-white: #0f172a;
+  --color-primary: #E2E8F0;
+  --color-primary-dark: #CBD5E1;
+  --color-accent: #72B07A;
+  --color-accent-hover: #8BC392;
+  --color-bg-light: #0F172A; /* Slate-900 */
+  --color-surface-soft: #1E293B; /* Slate-800 */
+  --color-surface-muted: #0F172A;
+  --color-text-main: #F8FAFC; /* Slate-50 */
+  --color-text-muted: #94A3B8; /* Slate-400 */
+  --color-text-soft: #64748B; /* Slate-500 */
+  --color-white: #1E293B;
+  --border-soft: rgba(248, 250, 252, 0.08);
+  --border-strong: rgba(248, 250, 252, 0.15);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 20px 50px rgba(0, 0, 0, 0.4);
+  --shadow-solid: 0 4px 0 0 rgba(0, 0, 0, 0.2);
+  --scrollbar-track: #0F172A;
+  --scrollbar-thumb: #334155;
+  --scrollbar-thumb-hover: #475569;
+  --scrollbar-border: transparent;
+  --scrollbar-shadow: none;
 }
 
 html {
   color-scheme: light;
+  font-size: var(--font-size-base);
   width: 100%;
   overflow-x: hidden;
+  scroll-behavior: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #3f678c #e7eef4;
+}
+
+html[data-text-scale="comfortable"] {
+  --font-size-base: 18px;
+  --font-size-caption: 0.96rem;
+  --font-size-eyebrow: 0.86rem;
+  --font-size-label: 1rem;
+}
+
+html[data-text-scale="large"] {
+  --font-size-base: 19px;
+  --font-size-caption: 1rem;
+  --font-size-eyebrow: 0.9rem;
+  --font-size-label: 1.04rem;
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
+  scrollbar-color: #88afcf #0a1725;
 }
 
 body {
   margin: 0;
   padding: 0;
+  font-size: 1rem;
+  line-height: var(--line-height-reading);
+  text-rendering: optimizeLegibility;
   font-family: "Inter", system-ui, -apple-system, sans-serif; /* TipografÃ­a moderna y limpia */
   background-color: var(--color-bg-light);
   color: var(--color-text-main);
@@ -63,8 +121,9 @@ body {
   width: 100%;
   overflow-x: hidden;
   transition:
-    background-color 0.25s ease,
-    color 0.25s ease;
+    background-color 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.26s ease,
+    background-image 0.34s ease;
 }
 
 #root {
@@ -79,6 +138,13 @@ canvas {
   max-width: 100%;
 }
 
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
 .main-content {
   width: 100%;
   margin: 0 auto;
@@ -90,6 +156,50 @@ canvas {
   max-width: none;
 }
 
+.route-loader-shell {
+  min-height: calc(100vh - 100px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.route-loader-card {
+  width: min(100%, 420px);
+  padding: 1.5rem 1.4rem;
+  border-radius: 12px;
+  background: var(--color-white);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.route-loader-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(76, 175, 80, 0.12);
+  color: var(--color-accent);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.route-loader-card strong {
+  display: block;
+  color: var(--color-text-main);
+  font-size: 1.05rem;
+}
+
+.route-loader-card p {
+  margin: 0.45rem 0 0;
+  color: var(--color-text-muted);
+}
+
 .main-content.admin-page-content {
   width: 100%;
   max-width: none;
@@ -97,20 +207,80 @@ canvas {
   padding: 100px 0 0;
 }
 
+.skip-link {
+  position: fixed;
+  top: 0.85rem;
+  left: 1rem;
+  z-index: 10001;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: #1d344d;
+  color: #ffffff;
+  font-size: var(--font-size-eyebrow);
+  font-weight: 800;
+  text-decoration: none;
+  transform: translateY(-180%);
+  transition: transform 0.2s ease;
+  box-shadow: 0 16px 30px rgba(19, 41, 64, 0.2);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+html[data-theme="dark"] .skip-link {
+  background: #edf4fb;
+  color: #07111d;
+}
+
 @media (max-width: 768px) {
   .main-content.admin-page-content {
     padding-top: 85px;
+  }
+
+  .route-loader-shell {
+    min-height: calc(100vh - 85px);
   }
 }
 
 /* Scrollbar personalizada */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
 }
+
 ::-webkit-scrollbar-track {
-  background: var(--color-bg-light);
+  background: var(--scrollbar-track);
+  border-left: 1px solid color-mix(in srgb, var(--border-soft) 55%, transparent);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: var(--color-primary);
-  border-radius: 4px;
+  background:
+    linear-gradient(var(--scrollbar-border), var(--scrollbar-border)) padding-box,
+    var(--scrollbar-thumb) border-box;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    var(--scrollbar-shadow);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(var(--scrollbar-border), var(--scrollbar-border)) padding-box,
+    var(--scrollbar-thumb-hover) border-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background:
+    linear-gradient(var(--scrollbar-border), var(--scrollbar-border)) padding-box,
+    linear-gradient(
+      180deg,
+      rgba(24, 56, 88, 1),
+      rgba(88, 152, 96, 1)
+    ) border-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

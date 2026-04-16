@@ -1,65 +1,216 @@
+import {
+  FaBookOpen,
+  FaCalendarAlt,
+  FaCheckCircle,
+  FaClock,
+  FaEnvelope,
+  FaIdCard,
+  FaLayerGroup,
+  FaPhoneAlt,
+  FaSchool,
+  FaSearch,
+  FaShieldAlt,
+  FaTicketAlt,
+  FaUserGraduate,
+  FaUserTie,
+} from "react-icons/fa";
+
 const BookingConfirmationSummary = ({
   dateLabel,
   durationLabel,
   timeRangeLabel,
   studentName,
+  responsibleName,
+  responsibleRelationshipLabel,
+  isAdult,
   educationLevel,
   subject,
   school,
+  email,
+  phone,
   lookupHint,
-}) => (
-  <div className="booking-summary-card">
-    <div className="summary-top-row">
-      <div>
-        <span className="summary-kicker">Resumen del turno</span>
-        <h4>{dateLabel || "Fecha pendiente"}</h4>
-      </div>
-      <span className="summary-duration-badge">
-        {durationLabel || "Sin duracion"}
-      </span>
-    </div>
+}) => {
+  const managementMethods = [
+    {
+      icon: <FaSearch />,
+      label: "Código",
+      value: "Se muestra al confirmar",
+      helper: "Es la forma más rápida de volver a entrar desde Mis Turnos.",
+    },
+    ...(email
+      ? [
+          {
+            icon: <FaEnvelope />,
+            label: "Email",
+            value: email,
+            helper: "También podrás buscar el turno con este correo.",
+          },
+        ]
+      : []),
+    ...(phone
+      ? [
+          {
+            icon: <FaPhoneAlt />,
+            label: "Teléfono",
+            value: phone,
+            helper: "Usa el mismo número que cargas en la reserva.",
+          },
+        ]
+      : []),
+  ];
 
-    <div className="summary-highlight-time">
-      {timeRangeLabel || "Horario pendiente"}
-    </div>
+  const detailCards = [
+    {
+      icon: <FaUserGraduate />,
+      label: "Alumno",
+      value: studentName || "Sin completar",
+      full: false,
+    },
+    {
+      icon: <FaUserTie />,
+      label: "Responsable",
+      value: isAdult
+        ? "Alumno mayor de edad"
+        : responsibleName || "Adulto responsable",
+      full: false,
+    },
+    {
+      icon: <FaIdCard />,
+      label: "Parentesco",
+      value: responsibleRelationshipLabel || "Sin completar",
+      full: false,
+    },
+    {
+      icon: <FaLayerGroup />,
+      label: "Nivel",
+      value: educationLevel || "Sin completar",
+      full: false,
+    },
+    {
+      icon: <FaSchool />,
+      label: "Institución",
+      value: school || "Sin completar",
+      full: false,
+    },
+    {
+      icon: <FaBookOpen />,
+      label: "Materia o tema",
+      value: subject || "Sin completar",
+      full: true,
+    },
+  ];
 
-    <div className="summary-detail-grid">
-      <div className="summary-detail-card">
-        <span>Alumno</span>
-        <strong>{studentName || "Sin completar"}</strong>
-      </div>
-      <div className="summary-detail-card">
-        <span>Nivel</span>
-        <strong>{educationLevel || "Sin completar"}</strong>
-      </div>
-      <div className="summary-detail-card">
-        <span>Institucion</span>
-        <strong>{school || "Sin completar"}</strong>
-      </div>
-      <div className="summary-detail-card">
-        <span>Gestion</span>
-        <strong>Mis Turnos</strong>
-      </div>
-      <div className="summary-detail-card full">
-        <span>Materia</span>
-        <strong>{subject || "Sin completar"}</strong>
-      </div>
-    </div>
+  const supportPills = [
+    { icon: <FaCheckCircle />, label: "Sin cruces de horario" },
+    { icon: <FaShieldAlt />, label: "Reprogramable después" },
+    { icon: <FaTicketAlt />, label: "Código listo para gestionar" },
+  ];
 
-    <div className="summary-support-row">
-      <span className="summary-support-pill">Sin cruces de horario</span>
-      <span className="summary-support-pill">Podes reprogramar despues</span>
-      <span className="summary-support-pill">Codigo de gestion incluido</span>
-    </div>
+  return (
+    <div className="booking-summary-card booking-summary-card-expanded">
+      <div className="summary-overview-head">
+        <div>
+          <span className="summary-kicker">Resumen final</span>
+          <h4>{dateLabel || "Tu turno todavía necesita una fecha"}</h4>
+        </div>
+        <span className="summary-duration-badge">
+          {durationLabel || "Duración pendiente"}
+        </span>
+      </div>
 
-    <div className="summary-management-note">
-      <span className="summary-note-kicker">Despues de confirmar</span>
-      <p>
-        {lookupHint ||
-          "Te mostramos un codigo grande y despues puedes volver a encontrar tu reserva en Mis Turnos con ese codigo, tu email o tu WhatsApp."}
+      <p className="summary-lead">
+        Todo lo importante queda ordenado antes de confirmar, en una sola
+        mirada y sin párrafos eternos.
       </p>
+
+      <div className="summary-highlight-grid">
+        <article className="summary-highlight-card summary-highlight-time">
+          <span className="summary-highlight-icon">
+            <FaClock />
+          </span>
+          <div>
+            <span>Horario reservado</span>
+            <strong>{timeRangeLabel || "Selecciona un horario"}</strong>
+            <p>Este bloque queda confirmado exactamente así.</p>
+          </div>
+        </article>
+
+        <article className="summary-highlight-card summary-highlight-date">
+          <span className="summary-highlight-icon">
+            <FaCalendarAlt />
+          </span>
+          <div>
+            <span>Día elegido</span>
+            <strong>{dateLabel || "Sin fecha todavía"}</strong>
+            <p>Lo revisas ahora y luego lo gestionas desde Mis Turnos.</p>
+          </div>
+        </article>
+
+        <article className="summary-highlight-card summary-highlight-access">
+          <span className="summary-highlight-icon">
+            <FaTicketAlt />
+          </span>
+          <div>
+            <span>Acceso posterior</span>
+            <strong>Código visible al confirmar</strong>
+            <p>También podrás entrar con email o número de teléfono si los cargaste.</p>
+          </div>
+        </article>
+      </div>
+
+      <div className="summary-section-heading">
+        <span>Datos cargados</span>
+        <p>Así se guardará la reserva cuando presiones confirmar.</p>
+      </div>
+
+      <div className="summary-detail-grid">
+        {detailCards.map((card) => (
+          <div
+            key={card.label}
+            className={`summary-detail-card ${card.full ? "full" : ""}`}
+          >
+            <span>
+              {card.icon} {card.label}
+            </span>
+            <strong>{card.value}</strong>
+          </div>
+        ))}
+      </div>
+
+      <div className="summary-trust-strip">
+        {supportPills.map((pill) => (
+          <span key={pill.label} className="summary-trust-pill">
+            {pill.icon}
+            {pill.label}
+          </span>
+        ))}
+      </div>
+
+      <div className="summary-management-note summary-management-note-rich">
+        <div className="summary-management-copy">
+          <span className="summary-note-kicker">
+            Cómo lo vuelves a encontrar después
+          </span>
+          <h5>Te dejamos varias puertas de entrada</h5>
+          <p>
+            {lookupHint ||
+              "En Mis Turnos podrás usar el código de gestión, tu email o tu número de teléfono para revisar, reprogramar o cancelar el turno."}
+          </p>
+        </div>
+
+        <div className="summary-management-grid">
+          {managementMethods.map((method) => (
+            <article key={method.label} className="summary-management-mini-card">
+              <span className="summary-management-icon">{method.icon}</span>
+              <strong>{method.label}</strong>
+              <em>{method.value}</em>
+              <small>{method.helper}</small>
+            </article>
+          ))}
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default BookingConfirmationSummary;

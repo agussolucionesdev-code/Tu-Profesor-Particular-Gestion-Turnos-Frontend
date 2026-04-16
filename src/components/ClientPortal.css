@@ -1204,3 +1204,1990 @@
 [data-theme="dark"] .client-portal-wrapper .premium-input {
   color: #e5eef7;
 }
+
+.client-portal-wrapper {
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.08), transparent 28%),
+    linear-gradient(180deg, #f0fdf4 0%, #eff6ff 42%, #f8fafc 100%);
+  padding-top: 6.5rem;
+}
+
+.client-portal-wrapper .portal-header {
+  position: relative;
+  overflow: hidden;
+  padding: 2rem 1.5rem;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(52, 211, 153, 0.26), transparent 24%),
+    radial-gradient(circle at 85% 18%, rgba(96, 165, 250, 0.22), transparent 22%),
+    linear-gradient(135deg, #0f172a, #1e293b 55%, #047857);
+  box-shadow: 0 24px 55px rgba(15, 23, 42, 0.18);
+}
+
+.client-portal-wrapper .portal-header::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  bottom: -90px;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 68%);
+}
+
+.client-portal-wrapper .portal-title {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+}
+
+.client-portal-wrapper .portal-subtitle {
+  position: relative;
+  z-index: 1;
+  color: rgba(241, 245, 249, 0.86);
+}
+
+.client-portal-wrapper .header-decoration {
+  position: relative;
+  z-index: 1;
+  width: 110px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), #6ee7b7);
+}
+
+.client-portal-wrapper .guidance-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+  padding: 1.05rem 1rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+.client-portal-wrapper .guidance-card::after {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -25px;
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.1), transparent 72%);
+  pointer-events: none;
+}
+
+.client-portal-wrapper .guidance-card strong {
+  font-size: 1rem;
+}
+
+.client-portal-wrapper .search-container {
+  margin-bottom: 0.75rem;
+  padding: 12px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.12);
+}
+
+.client-portal-wrapper .search-input {
+  padding: 1rem 1.05rem;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.client-portal-wrapper .btn-search {
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.14);
+}
+
+.client-portal-wrapper .portal-management-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 20px;
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 34%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.03), rgba(16, 185, 129, 0.12));
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.client-portal-wrapper .portal-management-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #6ee7b7;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.client-portal-wrapper .portal-management-copy strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--cp-primary);
+  font-size: 1rem;
+}
+
+.client-portal-wrapper .portal-management-copy p {
+  margin: 0;
+  color: var(--cp-text-main);
+  line-height: 1.55;
+}
+
+.client-portal-wrapper .search-method-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.client-portal-wrapper .search-method-pills span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--cp-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.client-portal-wrapper .portal-results-summary {
+  justify-content: flex-start;
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.client-portal-wrapper .portal-history-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin: 0 0 1rem 0;
+  padding: 1rem 1.05rem;
+  border-radius: 16px;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+.client-portal-wrapper .portal-history-hint span {
+  line-height: 1.48;
+}
+
+.client-portal-wrapper .portal-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--cp-text-main);
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.client-portal-wrapper .portal-toast-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #0f172a;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.client-portal-wrapper .portal-toast-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.24rem;
+}
+
+.client-portal-wrapper .portal-toast-copy strong {
+  color: var(--cp-primary);
+  font-size: 0.95rem;
+}
+
+.client-portal-wrapper .portal-toast-copy span {
+  color: var(--cp-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.client-portal-wrapper .portal-toast-copy small {
+  color: var(--cp-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.client-portal-wrapper .portal-toast.success {
+  border-color: rgba(16, 185, 129, 0.22);
+}
+
+.client-portal-wrapper .portal-toast.success .portal-toast-icon {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.client-portal-wrapper .portal-toast.warning {
+  border-color: rgba(245, 158, 11, 0.24);
+}
+
+.client-portal-wrapper .portal-toast.warning .portal-toast-icon {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.client-portal-wrapper .portal-toast.error {
+  border-color: rgba(239, 68, 68, 0.24);
+}
+
+.client-portal-wrapper .portal-toast.error .portal-toast-icon {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.client-portal-wrapper .portal-toast.info {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.client-portal-wrapper .portal-toast.info .portal-toast-icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+[data-theme="dark"] .client-portal-wrapper {
+  background:
+    radial-gradient(circle at top, rgba(52, 211, 153, 0.08), transparent 28%),
+    linear-gradient(180deg, #07111f 0%, #08111c 48%, #07111f 100%);
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-header {
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.32);
+}
+
+[data-theme="dark"] .client-portal-wrapper .guidance-card,
+[data-theme="dark"] .client-portal-wrapper .search-container {
+  background: rgba(15, 23, 42, 0.92);
+}
+
+[data-theme="dark"] .client-portal-wrapper .search-input {
+  background: #111827;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-management-alert {
+  border-color: rgba(52, 211, 153, 0.22);
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(52, 211, 153, 0.12));
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-management-icon {
+  background: linear-gradient(135deg, #34d399, #059669);
+  color: #04110d;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-management-copy p,
+[data-theme="dark"] .client-portal-wrapper .portal-toast-copy span,
+[data-theme="dark"] .client-portal-wrapper .portal-toast-copy small {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .client-portal-wrapper .search-method-pills span {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #e5eef7;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-history-hint {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(96, 165, 250, 0.24);
+  color: #bfdbfe;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-toast {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-toast-copy strong {
+  color: #e5eef7;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-toast.success .portal-toast-icon {
+  background: rgba(16, 185, 129, 0.18);
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-toast.warning .portal-toast-icon {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-toast.error .portal-toast-icon {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-toast.info .portal-toast-icon {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+@media (max-width: 768px) {
+  .client-portal-wrapper {
+    padding-top: 5.75rem;
+  }
+
+  .client-portal-wrapper .portal-header {
+    padding: 1.75rem 1.15rem;
+  }
+
+  .client-portal-wrapper .portal-management-alert {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .client-portal-wrapper {
+    padding: 5.5rem 1rem 2rem;
+  }
+
+  .client-portal-wrapper .search-container {
+    flex-direction: column;
+  }
+
+  .client-portal-wrapper .btn-search {
+    min-height: 52px;
+    padding: 1rem;
+  }
+
+  .client-portal-wrapper .portal-toast {
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+}
+
+/* ========================================================================== */
+/* v53.0 - Portal modals y tarjetas mas consistentes                           */
+/* ========================================================================== */
+
+.client-portal-wrapper .ticket-card {
+  border-radius: 24px;
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.1);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.client-portal-wrapper .ticket-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 55px rgba(15, 23, 42, 0.12);
+}
+
+.client-portal-wrapper .ticket-header,
+.client-portal-wrapper .ticket-footer {
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.client-portal-wrapper .btn-action {
+  min-height: 44px;
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+}
+
+.client-portal-wrapper .modal-overlay {
+  padding: 1rem;
+  backdrop-filter: blur(14px);
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.client-portal-wrapper .modal-box {
+  width: 100%;
+  border-radius: 30px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 32px 70px rgba(15, 23, 42, 0.28);
+}
+
+.client-portal-wrapper .modal-kicker {
+  display: inline-flex;
+  margin-bottom: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #059669;
+}
+
+.client-portal-wrapper .reschedule-modal-box {
+  max-width: min(1080px, calc(100vw - 1.25rem));
+  max-height: min(92vh, 940px);
+  overflow: auto;
+  background:
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.14), transparent 24%),
+    linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+.client-portal-wrapper .reschedule-header {
+  padding: 1.5rem 1.6rem 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.16), transparent 26%),
+    linear-gradient(135deg, #0f172a, #1e293b 58%, #047857);
+  color: #f8fafc;
+}
+
+.client-portal-wrapper .reschedule-header .modal-kicker {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.client-portal-wrapper .reschedule-header h3,
+.client-portal-wrapper .reschedule-header p {
+  color: #f8fafc;
+}
+
+.client-portal-wrapper .reschedule-modal-body {
+  padding: 1.35rem 1.5rem 1.5rem;
+  background: transparent;
+}
+
+.client-portal-wrapper .reschedule-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
+  gap: 1.2rem;
+}
+
+.client-portal-wrapper .reschedule-overview-panel,
+.client-portal-wrapper .reschedule-editor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.client-portal-wrapper .reschedule-comparison-modern {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 62px minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.client-portal-wrapper .date-box {
+  min-height: 156px;
+  padding: 1rem;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+}
+
+.client-portal-wrapper .date-box.old {
+  background:
+    radial-gradient(circle at top right, rgba(148, 163, 184, 0.14), transparent 28%),
+    rgba(255, 255, 255, 0.98);
+}
+
+.client-portal-wrapper .date-box.new {
+  background:
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.16), transparent 28%),
+    rgba(236, 253, 245, 0.98);
+}
+
+.client-portal-wrapper .date-box span,
+.client-portal-wrapper .reschedule-mini-facts span,
+.client-portal-wrapper .cancel-soft-summary span {
+  display: inline-flex;
+  margin-bottom: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.client-portal-wrapper .date-box strong,
+.client-portal-wrapper .reschedule-mini-facts strong,
+.client-portal-wrapper .cancel-soft-summary strong {
+  display: block;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.client-portal-wrapper .date-box small,
+.client-portal-wrapper .change-preview span {
+  color: #475569;
+  line-height: 1.55;
+}
+
+.client-portal-wrapper .arrow-box {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #6ee7b7;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.18);
+}
+
+.client-portal-wrapper .change-preview-rich,
+.client-portal-wrapper .calendar-panel,
+.client-portal-wrapper .duration-panel,
+.client-portal-wrapper .cancel-soft-note {
+  padding: 1rem 1.05rem;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 28%),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+}
+
+.client-portal-wrapper .change-preview-rich {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.client-portal-wrapper .change-preview-rich strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.client-portal-wrapper .reschedule-mini-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.client-portal-wrapper .reschedule-mini-facts article,
+.client-portal-wrapper .cancel-soft-summary article {
+  min-height: 110px;
+  padding: 0.95rem;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+}
+
+.client-portal-wrapper .calendar-panel .react-datepicker {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.client-portal-wrapper .duration-panel input {
+  min-height: 52px;
+  border-radius: 16px;
+}
+
+.client-portal-wrapper .reschedule-footer,
+.client-portal-wrapper .cancel-soft-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 1rem 1.4rem 1.25rem;
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.client-portal-wrapper .cancel-soft-modal {
+  max-width: min(620px, calc(100vw - 1.25rem));
+  background:
+    radial-gradient(circle at top right, rgba(239, 68, 68, 0.14), transparent 26%),
+    linear-gradient(180deg, #ffffff, #fff7f7);
+}
+
+.client-portal-wrapper .cancel-soft-header {
+  display: flex;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem 0.8rem;
+}
+
+.client-portal-wrapper .danger-icon.soft {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fee2e2, #fef2f2);
+  color: #dc2626;
+  flex-shrink: 0;
+  box-shadow: 0 18px 36px rgba(239, 68, 68, 0.18);
+}
+
+.client-portal-wrapper .cancel-soft-header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.5rem;
+}
+
+.client-portal-wrapper .cancel-soft-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding: 0 1.5rem 1rem;
+}
+
+.client-portal-wrapper .cancel-soft-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin: 0 1.5rem 1.2rem;
+}
+
+.client-portal-wrapper .cancel-soft-note svg {
+  flex-shrink: 0;
+  color: #dc2626;
+  margin-top: 0.15rem;
+}
+
+.client-portal-wrapper .cancel-soft-note span {
+  color: #475569;
+  line-height: 1.6;
+}
+
+[data-theme="dark"] .client-portal-wrapper .ticket-card,
+[data-theme="dark"] .client-portal-wrapper .reschedule-modal-box,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-modal,
+[data-theme="dark"] .client-portal-wrapper .date-box,
+[data-theme="dark"] .client-portal-wrapper .change-preview-rich,
+[data-theme="dark"] .client-portal-wrapper .calendar-panel,
+[data-theme="dark"] .client-portal-wrapper .duration-panel,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-note,
+[data-theme="dark"] .client-portal-wrapper .reschedule-mini-facts article,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-summary article,
+[data-theme="dark"] .client-portal-wrapper .reschedule-footer,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-footer {
+  background-color: rgba(15, 23, 42, 0.96);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-header {
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.2), transparent 24%),
+    linear-gradient(135deg, #07111f, #0f172a 58%, #047857);
+}
+
+[data-theme="dark"] .client-portal-wrapper .date-box strong,
+[data-theme="dark"] .client-portal-wrapper .change-preview-rich strong,
+[data-theme="dark"] .client-portal-wrapper .reschedule-mini-facts strong,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-header h3,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-summary strong {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .client-portal-wrapper .date-box small,
+[data-theme="dark"] .client-portal-wrapper .change-preview span,
+[data-theme="dark"] .client-portal-wrapper .danger-text,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-note span {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .client-portal-wrapper .danger-icon.soft {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(30, 41, 59, 0.96));
+  color: #fda4af;
+}
+
+@media (max-width: 920px) {
+  .client-portal-wrapper .reschedule-modal-grid,
+  .client-portal-wrapper .cancel-soft-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .client-portal-wrapper .reschedule-mini-facts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .client-portal-wrapper .reschedule-modal-box,
+  .client-portal-wrapper .cancel-soft-modal {
+    max-width: calc(100vw - 0.85rem);
+    border-radius: 24px;
+  }
+
+  .client-portal-wrapper .reschedule-header,
+  .client-portal-wrapper .reschedule-modal-body,
+  .client-portal-wrapper .cancel-soft-header,
+  .client-portal-wrapper .cancel-soft-summary,
+  .client-portal-wrapper .cancel-soft-note,
+  .client-portal-wrapper .reschedule-footer,
+  .client-portal-wrapper .cancel-soft-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .client-portal-wrapper .reschedule-comparison-modern,
+  .client-portal-wrapper .reschedule-mini-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .client-portal-wrapper .arrow-box {
+    margin: 0 auto;
+    transform: rotate(90deg);
+  }
+
+  .client-portal-wrapper .cancel-soft-header {
+    flex-direction: column;
+  }
+
+  .client-portal-wrapper .reschedule-footer,
+  .client-portal-wrapper .cancel-soft-footer {
+    flex-direction: column;
+  }
+}
+
+/* ========================================================================== */
+/* v54.0 - Portal y modales alineados a la marca                              */
+/* ========================================================================== */
+
+.client-portal-wrapper {
+  --cp-bg: var(--color-bg-light);
+  --cp-white: var(--color-white);
+  --cp-primary: var(--brand-navy);
+  --cp-primary-soft: #2b5478;
+  --cp-accent: var(--brand-green);
+  --cp-accent-soft: rgba(88, 152, 96, 0.1);
+  --cp-success: var(--brand-green);
+  --cp-warning: #d08a2e;
+  --cp-danger: #cf4f4f;
+  --cp-text-main: var(--color-text-main);
+  --cp-text-muted: var(--color-text-muted);
+  --cp-border: var(--border-soft);
+  --cp-shadow: var(--shadow-card);
+  padding: calc(100px + 1.5rem) 1.2rem 3rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(243, 247, 250, 1) 54%),
+    var(--cp-bg);
+}
+
+[data-theme="dark"] .client-portal-wrapper {
+  --cp-white: var(--color-white);
+  --cp-primary: #edf4fb;
+  --cp-primary-soft: #aac1d8;
+  --cp-accent: var(--color-accent);
+  --cp-accent-soft: rgba(114, 176, 122, 0.14);
+  --cp-text-main: var(--color-text-main);
+  --cp-text-muted: var(--color-text-muted);
+  --cp-border: var(--border-soft);
+  --cp-shadow: var(--shadow-card);
+  background:
+    linear-gradient(180deg, rgba(9, 20, 34, 0.98) 0%, rgba(7, 17, 29, 1) 62%),
+    var(--cp-bg);
+}
+
+.client-portal-wrapper .portal-container {
+  max-width: 1040px;
+}
+
+.client-portal-wrapper .portal-header {
+  padding: 2rem 1.6rem;
+  border-radius: 30px;
+  border: 1px solid var(--cp-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 60px rgba(19, 41, 64, 0.08);
+}
+
+.client-portal-wrapper .portal-header::after {
+  background:
+    radial-gradient(circle at center, rgba(88, 152, 96, 0.18), transparent 62%);
+  opacity: 0.5;
+}
+
+.client-portal-wrapper .portal-title {
+  color: var(--cp-text-main);
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.04em;
+}
+
+.client-portal-wrapper .portal-subtitle {
+  max-width: 620px;
+  margin: 0.7rem auto 0;
+  color: var(--cp-text-muted);
+}
+
+.client-portal-wrapper .header-decoration {
+  width: 64px;
+  height: 5px;
+  background: linear-gradient(90deg, var(--cp-primary), var(--cp-accent));
+}
+
+.client-portal-wrapper .search-container {
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border-radius: 22px;
+  border: 1px solid var(--cp-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 20px 50px rgba(19, 41, 64, 0.08);
+}
+
+.client-portal-wrapper .search-input {
+  min-height: 54px;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(248, 251, 253, 0.94);
+}
+
+.client-portal-wrapper .btn-search {
+  min-height: 54px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1d344d, #2b5478);
+  box-shadow: 0 18px 34px rgba(29, 52, 77, 0.18);
+}
+
+.client-portal-wrapper .btn-search:hover {
+  background: linear-gradient(135deg, #183858, #204060);
+}
+
+.client-portal-wrapper .ticket-card {
+  border-radius: 24px;
+  border: 1px solid var(--cp-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 44px rgba(19, 41, 64, 0.08);
+}
+
+.client-portal-wrapper .ticket-header,
+.client-portal-wrapper .ticket-footer {
+  background: rgba(248, 251, 253, 0.94);
+}
+
+.client-portal-wrapper .ticket-code {
+  background: rgba(237, 243, 247, 0.96);
+  color: var(--cp-text-main);
+}
+
+.client-portal-wrapper .status-badge.Confirmado {
+  background: rgba(88, 152, 96, 0.14);
+  color: #426f47;
+}
+
+.client-portal-wrapper .status-badge.Pendiente {
+  background: rgba(208, 138, 46, 0.16);
+  color: #8a5810;
+}
+
+.client-portal-wrapper .btn-action {
+  border-radius: 16px;
+}
+
+.client-portal-wrapper .modal-overlay {
+  background: rgba(13, 26, 41, 0.7);
+}
+
+.client-portal-wrapper .modal-box {
+  border-radius: 30px;
+  border: 1px solid rgba(32, 64, 96, 0.1);
+}
+
+.client-portal-wrapper .modal-kicker {
+  color: var(--cp-accent);
+}
+
+.client-portal-wrapper .reschedule-modal-box {
+  max-width: min(1120px, calc(100vw - 2rem));
+  max-height: min(88vh, 860px);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.client-portal-wrapper .reschedule-header {
+  padding: 1.4rem 1.5rem 1rem;
+  background: linear-gradient(135deg, #1d344d, #204060 66%, #365e7d);
+}
+
+.client-portal-wrapper .reschedule-modal-body {
+  padding: 1.15rem 1.2rem 1.2rem;
+}
+
+.client-portal-wrapper .reschedule-modal-grid {
+  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+  gap: 1rem;
+}
+
+.client-portal-wrapper .date-box,
+.client-portal-wrapper .change-preview-rich,
+.client-portal-wrapper .calendar-panel,
+.client-portal-wrapper .duration-panel,
+.client-portal-wrapper .cancel-soft-note,
+.client-portal-wrapper .reschedule-mini-facts article,
+.client-portal-wrapper .cancel-soft-summary article {
+  border-radius: 24px;
+  border: 1px solid rgba(32, 64, 96, 0.1);
+  background: rgba(248, 251, 253, 0.96);
+  box-shadow: 0 14px 34px rgba(19, 41, 64, 0.06);
+}
+
+.client-portal-wrapper .date-box {
+  min-height: 142px;
+}
+
+.client-portal-wrapper .date-box.old {
+  background: rgba(248, 251, 253, 0.96);
+}
+
+.client-portal-wrapper .date-box.new {
+  background: rgba(237, 246, 238, 0.96);
+  border-color: rgba(88, 152, 96, 0.18);
+}
+
+.client-portal-wrapper .date-box strong,
+.client-portal-wrapper .change-preview-rich strong,
+.client-portal-wrapper .reschedule-mini-facts strong,
+.client-portal-wrapper .cancel-soft-summary strong {
+  color: var(--cp-text-main);
+}
+
+.client-portal-wrapper .date-box small,
+.client-portal-wrapper .change-preview span,
+.client-portal-wrapper .cancel-soft-note span {
+  color: var(--cp-text-muted);
+}
+
+.client-portal-wrapper .arrow-box {
+  background: linear-gradient(135deg, #1d344d, #2b5478);
+  color: #edf4fb;
+  box-shadow: 0 18px 34px rgba(29, 52, 77, 0.16);
+}
+
+.client-portal-wrapper .change-preview-rich {
+  background: rgba(237, 243, 247, 0.78);
+}
+
+.client-portal-wrapper .calendar-panel .react-datepicker,
+.client-portal-wrapper .calendar-panel .react-datepicker__month-container {
+  width: 100% !important;
+  background: transparent !important;
+}
+
+.client-portal-wrapper .calendar-panel .react-datepicker {
+  border: none !important;
+}
+
+.client-portal-wrapper .react-datepicker__header {
+  background: rgba(237, 243, 247, 0.96) !important;
+  border-bottom: 1px solid rgba(32, 64, 96, 0.08) !important;
+}
+
+.client-portal-wrapper .react-datepicker__current-month,
+.client-portal-wrapper .react-datepicker-time__header,
+.client-portal-wrapper .react-datepicker-year-header {
+  color: var(--cp-text-main) !important;
+  font-weight: 800 !important;
+}
+
+.client-portal-wrapper .react-datepicker__day-name,
+.client-portal-wrapper .react-datepicker__time-name {
+  color: var(--cp-text-muted) !important;
+}
+
+.client-portal-wrapper .react-datepicker__day,
+.client-portal-wrapper .react-datepicker__time-list-item {
+  border-radius: 14px !important;
+  color: var(--cp-text-main) !important;
+}
+
+.client-portal-wrapper .react-datepicker__day:hover,
+.client-portal-wrapper .react-datepicker__time-list-item:hover {
+  background: rgba(32, 64, 96, 0.08) !important;
+}
+
+.client-portal-wrapper .react-datepicker__day--selected,
+.client-portal-wrapper .react-datepicker__time-list-item--selected {
+  background: #1d344d !important;
+  color: #edf4fb !important;
+}
+
+.client-portal-wrapper .react-datepicker__day--keyboard-selected {
+  background: rgba(88, 152, 96, 0.18) !important;
+  color: #426f47 !important;
+}
+
+.client-portal-wrapper .react-datepicker__day--today {
+  box-shadow: inset 0 0 0 1px rgba(88, 152, 96, 0.42);
+}
+
+.client-portal-wrapper .react-datepicker__time-container {
+  width: 102px !important;
+  border-left: 1px solid rgba(32, 64, 96, 0.08) !important;
+}
+
+.client-portal-wrapper .react-datepicker__time-box {
+  width: 100% !important;
+}
+
+.client-portal-wrapper .react-datepicker__time-list {
+  padding: 0.45rem !important;
+}
+
+.client-portal-wrapper .react-datepicker__time-list-item {
+  min-height: 36px !important;
+  line-height: 36px !important;
+}
+
+.client-portal-wrapper .duration-panel input {
+  border-radius: 18px;
+  border: 1px solid rgba(32, 64, 96, 0.1);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.client-portal-wrapper .reschedule-footer,
+.client-portal-wrapper .cancel-soft-footer {
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid rgba(32, 64, 96, 0.08);
+}
+
+.client-portal-wrapper .btn-modal {
+  min-height: 52px;
+  border-radius: 18px;
+  font-weight: 800;
+}
+
+.client-portal-wrapper .btn-modal.cancel,
+.client-portal-wrapper .safe-return {
+  background: rgba(237, 243, 247, 0.96);
+  border: 1px solid rgba(32, 64, 96, 0.1);
+  color: var(--cp-text-main);
+}
+
+.client-portal-wrapper .btn-modal.confirm {
+  background: linear-gradient(135deg, #1d344d, #2b5478);
+  box-shadow: 0 18px 34px rgba(29, 52, 77, 0.16);
+}
+
+.client-portal-wrapper .cancel-soft-modal {
+  max-width: min(640px, calc(100vw - 2rem));
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.client-portal-wrapper .cancel-soft-header {
+  padding: 1.35rem 1.35rem 0.7rem;
+}
+
+.client-portal-wrapper .danger-icon.soft {
+  background: linear-gradient(135deg, rgba(207, 79, 79, 0.12), rgba(255, 244, 244, 0.96));
+  box-shadow: 0 18px 34px rgba(207, 79, 79, 0.14);
+}
+
+.client-portal-wrapper .cancel-soft-header h3 {
+  color: var(--cp-text-main);
+}
+
+.client-portal-wrapper .danger-text {
+  color: var(--cp-text-muted);
+}
+
+.client-portal-wrapper .danger-confirm {
+  background: linear-gradient(135deg, #cf4f4f, #b83e3e);
+  box-shadow: 0 18px 34px rgba(207, 79, 79, 0.18);
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-header,
+[data-theme="dark"] .client-portal-wrapper .search-container,
+[data-theme="dark"] .client-portal-wrapper .ticket-card,
+[data-theme="dark"] .client-portal-wrapper .ticket-header,
+[data-theme="dark"] .client-portal-wrapper .ticket-footer,
+[data-theme="dark"] .client-portal-wrapper .reschedule-modal-box,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-modal,
+[data-theme="dark"] .client-portal-wrapper .date-box,
+[data-theme="dark"] .client-portal-wrapper .change-preview-rich,
+[data-theme="dark"] .client-portal-wrapper .calendar-panel,
+[data-theme="dark"] .client-portal-wrapper .duration-panel,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-note,
+[data-theme="dark"] .client-portal-wrapper .reschedule-mini-facts article,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-summary article,
+[data-theme="dark"] .client-portal-wrapper .reschedule-footer,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-footer {
+  background-color: rgba(14, 27, 44, 0.96);
+  border-color: rgba(171, 195, 217, 0.14);
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-header {
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .client-portal-wrapper .search-input,
+[data-theme="dark"] .client-portal-wrapper .ticket-code,
+[data-theme="dark"] .client-portal-wrapper .btn-modal.cancel,
+[data-theme="dark"] .client-portal-wrapper .safe-return {
+  background: rgba(17, 32, 50, 0.96);
+  border-color: rgba(171, 195, 217, 0.12);
+  color: var(--cp-text-main);
+}
+
+[data-theme="dark"] .client-portal-wrapper .status-badge.Confirmado {
+  background: rgba(114, 176, 122, 0.16);
+  color: #9ad2a1;
+}
+
+[data-theme="dark"] .client-portal-wrapper .status-badge.Pendiente {
+  background: rgba(208, 138, 46, 0.18);
+  color: #f0c27e;
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-header,
+[data-theme="dark"] .client-portal-wrapper .btn-search,
+[data-theme="dark"] .client-portal-wrapper .btn-modal.confirm {
+  background: linear-gradient(135deg, #112032, #1d344d);
+}
+
+[data-theme="dark"] .client-portal-wrapper .date-box.new {
+  background: rgba(114, 176, 122, 0.12);
+  border-color: rgba(114, 176, 122, 0.18);
+}
+
+[data-theme="dark"] .client-portal-wrapper .date-box strong,
+[data-theme="dark"] .client-portal-wrapper .change-preview-rich strong,
+[data-theme="dark"] .client-portal-wrapper .reschedule-mini-facts strong,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-summary strong,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-header h3 {
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .date-box small,
+[data-theme="dark"] .client-portal-wrapper .change-preview span,
+[data-theme="dark"] .client-portal-wrapper .danger-text,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-note span {
+  color: var(--cp-text-muted);
+}
+
+[data-theme="dark"] .client-portal-wrapper .react-datepicker__header {
+  background: rgba(17, 32, 50, 0.96) !important;
+  border-bottom-color: rgba(171, 195, 217, 0.12) !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .react-datepicker,
+[data-theme="dark"] .client-portal-wrapper .calendar-panel .react-datepicker {
+  background: transparent !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .react-datepicker__day:hover,
+[data-theme="dark"] .client-portal-wrapper .react-datepicker__time-list-item:hover {
+  background: rgba(171, 195, 217, 0.1) !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .react-datepicker__day--selected,
+[data-theme="dark"] .client-portal-wrapper .react-datepicker__time-list-item--selected {
+  background: rgba(114, 176, 122, 0.22) !important;
+  color: #edf4fb !important;
+}
+
+@media (max-width: 920px) {
+  .client-portal-wrapper {
+    padding-top: calc(88px + 1.4rem);
+  }
+
+  .client-portal-wrapper .reschedule-modal-grid,
+  .client-portal-wrapper .cancel-soft-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .client-portal-wrapper .portal-header,
+  .client-portal-wrapper .search-container {
+    border-radius: 24px;
+  }
+
+  .client-portal-wrapper .search-container {
+    flex-direction: column;
+  }
+
+  .client-portal-wrapper .btn-search {
+    width: 100%;
+  }
+
+  .client-portal-wrapper .reschedule-modal-box,
+  .client-portal-wrapper .cancel-soft-modal {
+    max-width: calc(100vw - 0.9rem);
+  }
+}
+
+/* ========================================================================== */
+/* v55.0 - Reprogramacion guiada, amplia y totalmente alineada a la marca     */
+/* ========================================================================== */
+
+.client-portal-wrapper .reschedule-modal-box {
+  max-width: min(1240px, calc(100vw - 1.4rem));
+  max-height: min(92vh, 920px);
+  border-radius: 34px;
+  overflow: auto;
+}
+
+.client-portal-wrapper .reschedule-header {
+  display: grid;
+  gap: 1rem;
+  padding: 1.45rem 1.55rem 1.15rem;
+  background: linear-gradient(135deg, #1d344d, #204060 58%, #3f6f8d);
+}
+
+.client-portal-wrapper .reschedule-header-copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.client-portal-wrapper .reschedule-header h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+  font-size: clamp(1.6rem, 2vw, 2rem);
+}
+
+.client-portal-wrapper .reschedule-header p {
+  max-width: 72ch;
+  margin: 0;
+  color: rgba(237, 244, 251, 0.88);
+  line-height: 1.6;
+}
+
+.client-portal-wrapper .reschedule-steps-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.client-portal-wrapper .reschedule-step-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(237, 244, 251, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(237, 244, 251, 0.88);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.client-portal-wrapper .reschedule-step-chip.active {
+  background: rgba(114, 176, 122, 0.16);
+  border-color: rgba(114, 176, 122, 0.28);
+  color: #eff8f0;
+}
+
+.client-portal-wrapper .reschedule-modal-body {
+  padding: 1.2rem 1.3rem 1.25rem;
+}
+
+.client-portal-wrapper .reschedule-modal-grid {
+  grid-template-columns: minmax(360px, 0.95fr) minmax(0, 1.15fr);
+  gap: 1.05rem;
+  align-items: start;
+}
+
+.client-portal-wrapper .reschedule-overview-panel,
+.client-portal-wrapper .reschedule-editor-panel {
+  gap: 1rem;
+}
+
+.client-portal-wrapper .reschedule-panel-intro,
+.client-portal-wrapper .reschedule-editor-head {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.05rem;
+  border-radius: 24px;
+  border: 1px solid rgba(32, 64, 96, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 253, 0.96));
+  box-shadow: 0 16px 34px rgba(19, 41, 64, 0.06);
+}
+
+.client-portal-wrapper .reschedule-panel-kicker {
+  color: var(--cp-accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.client-portal-wrapper .reschedule-panel-intro strong,
+.client-portal-wrapper .reschedule-editor-head strong {
+  color: var(--cp-text-main);
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.client-portal-wrapper .reschedule-panel-intro p,
+.client-portal-wrapper .reschedule-editor-head p {
+  margin: 0;
+  color: var(--cp-text-muted);
+  line-height: 1.6;
+}
+
+.client-portal-wrapper .reschedule-comparison-modern {
+  grid-template-columns: minmax(0, 1fr) 68px minmax(0, 1fr);
+  gap: 0.9rem;
+  padding: 1rem;
+  border-radius: 26px;
+  border: 1px solid rgba(32, 64, 96, 0.1);
+  background: rgba(248, 251, 253, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.client-portal-wrapper .date-box {
+  min-height: 184px;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+  padding: 1.15rem 1.1rem;
+}
+
+.client-portal-wrapper .date-box span {
+  color: var(--cp-text-muted);
+  letter-spacing: 0.12em;
+}
+
+.client-portal-wrapper .date-box strong {
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+
+.client-portal-wrapper .date-box small {
+  font-size: 1rem;
+}
+
+.client-portal-wrapper .date-box.new {
+  background: linear-gradient(180deg, rgba(237, 246, 238, 0.96), rgba(245, 251, 246, 0.96));
+}
+
+.client-portal-wrapper .arrow-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+}
+
+.client-portal-wrapper .change-preview-rich {
+  gap: 0.55rem;
+  padding: 1.05rem 1.1rem;
+}
+
+.client-portal-wrapper .change-preview-rich strong {
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.client-portal-wrapper .reschedule-status-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.client-portal-wrapper .reschedule-status-grid article {
+  min-height: 116px;
+}
+
+.client-portal-wrapper .reschedule-selection-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.client-portal-wrapper .reschedule-selection-pill {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 108px;
+  padding: 0.95rem 1rem;
+  border-radius: 22px;
+  border: 1px solid rgba(32, 64, 96, 0.1);
+  background: rgba(248, 251, 253, 0.96);
+  box-shadow: 0 14px 30px rgba(19, 41, 64, 0.05);
+}
+
+.client-portal-wrapper .reschedule-selection-pill span {
+  color: var(--cp-text-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.client-portal-wrapper .reschedule-selection-pill strong {
+  color: var(--cp-text-main);
+  line-height: 1.35;
+}
+
+.client-portal-wrapper .reschedule-selection-pill.accent {
+  background: linear-gradient(180deg, rgba(237, 246, 238, 0.96), rgba(245, 251, 246, 0.96));
+  border-color: rgba(88, 152, 96, 0.18);
+}
+
+.client-portal-wrapper .calendar-panel-premium {
+  padding: 1.05rem 1.1rem 1.15rem;
+}
+
+.client-portal-wrapper .calendar-panel-head,
+.client-portal-wrapper .duration-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.95rem;
+}
+
+.client-portal-wrapper .calendar-panel-head label,
+.client-portal-wrapper .duration-panel-head label {
+  color: var(--cp-text-main);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.client-portal-wrapper .calendar-panel-helper,
+.client-portal-wrapper .duration-panel-head span {
+  color: var(--cp-text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.client-portal-wrapper .reschedule-datepicker-header {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.client-portal-wrapper .reschedule-datepicker-header strong {
+  color: var(--cp-text-main);
+  font-size: 1.2rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.client-portal-wrapper .reschedule-month-nav {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(32, 64, 96, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--cp-primary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.client-portal-wrapper .reschedule-month-nav:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(19, 41, 64, 0.08);
+}
+
+.client-portal-wrapper .reschedule-month-nav:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 138px;
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  gap: 0.85rem;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__month-container {
+  width: auto !important;
+  padding: 0 0.25rem 0.25rem;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__header {
+  padding: 0 !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__day-names,
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__week {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(44px, 1fr));
+  justify-items: center;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__day-name {
+  width: auto !important;
+  margin: 0 0 0.6rem !important;
+  color: var(--cp-text-muted) !important;
+  font-weight: 800 !important;
+  text-transform: lowercase;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__month {
+  margin: 0 !important;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__day {
+  width: 42px !important;
+  line-height: 42px !important;
+  margin: 0 0 0.4rem !important;
+  font-weight: 800 !important;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__time-container {
+  width: 138px !important;
+  border-left: 1px solid rgba(32, 64, 96, 0.08) !important;
+  background: rgba(237, 243, 247, 0.72);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__header--time {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-bottom: 1px solid rgba(32, 64, 96, 0.08) !important;
+  padding: 0.9rem 0.65rem !important;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__time {
+  background: transparent !important;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__time-box {
+  width: 100% !important;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__time-list {
+  height: 332px !important;
+  padding: 0.55rem !important;
+}
+
+.client-portal-wrapper .calendar-panel-premium .react-datepicker__time-list-item {
+  min-height: 42px !important;
+  line-height: 42px !important;
+  margin-bottom: 0.3rem;
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.client-portal-wrapper .duration-panel-premium {
+  padding: 1.05rem 1.1rem;
+}
+
+.client-portal-wrapper .duration-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.95rem;
+}
+
+.client-portal-wrapper .duration-quick-btn {
+  min-height: 48px;
+  border: 1px solid rgba(32, 64, 96, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--cp-text-main);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.client-portal-wrapper .duration-quick-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(19, 41, 64, 0.08);
+}
+
+.client-portal-wrapper .duration-quick-btn.selected {
+  background: linear-gradient(135deg, #1d344d, #2b5478);
+  color: #edf4fb;
+  border-color: transparent;
+}
+
+.client-portal-wrapper .duration-manual-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.9fr) minmax(170px, 1.1fr);
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.client-portal-wrapper .duration-panel-premium input {
+  min-height: 54px;
+}
+
+.client-portal-wrapper .duration-preview-card {
+  display: grid;
+  align-content: center;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 18px;
+  background: rgba(237, 246, 238, 0.94);
+  border: 1px solid rgba(88, 152, 96, 0.18);
+}
+
+.client-portal-wrapper .duration-preview-card span {
+  color: var(--cp-text-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.client-portal-wrapper .duration-preview-card strong {
+  color: var(--cp-text-main);
+  font-size: 1.1rem;
+}
+
+.client-portal-wrapper .duration-preview {
+  display: block;
+  margin-top: 0.8rem;
+  color: var(--cp-text-muted);
+  line-height: 1.55;
+}
+
+.client-portal-wrapper .reschedule-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px 300px;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.client-portal-wrapper .reschedule-footer-note {
+  color: var(--cp-text-muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-header,
+[data-theme="dark"] .client-portal-wrapper .btn-modal.confirm {
+  background: linear-gradient(135deg, #112032, #1d344d 62%, #2b5478);
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-panel-intro,
+[data-theme="dark"] .client-portal-wrapper .reschedule-editor-head,
+[data-theme="dark"] .client-portal-wrapper .reschedule-comparison-modern,
+[data-theme="dark"] .client-portal-wrapper .reschedule-selection-pill,
+[data-theme="dark"] .client-portal-wrapper .reschedule-month-nav,
+[data-theme="dark"] .client-portal-wrapper .duration-quick-btn {
+  background: rgba(17, 32, 50, 0.96);
+  border-color: rgba(171, 195, 217, 0.14);
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-panel-intro strong,
+[data-theme="dark"] .client-portal-wrapper .reschedule-editor-head strong,
+[data-theme="dark"] .client-portal-wrapper .reschedule-selection-pill strong,
+[data-theme="dark"] .client-portal-wrapper .reschedule-datepicker-header strong,
+[data-theme="dark"] .client-portal-wrapper .duration-preview-card strong {
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-panel-intro p,
+[data-theme="dark"] .client-portal-wrapper .reschedule-editor-head p,
+[data-theme="dark"] .client-portal-wrapper .calendar-panel-helper,
+[data-theme="dark"] .client-portal-wrapper .duration-panel-head span,
+[data-theme="dark"] .client-portal-wrapper .reschedule-footer-note,
+[data-theme="dark"] .client-portal-wrapper .duration-preview,
+[data-theme="dark"] .client-portal-wrapper .reschedule-selection-pill span {
+  color: var(--cp-text-muted);
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-step-chip {
+  border-color: rgba(237, 244, 251, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-step-chip.active {
+  background: rgba(114, 176, 122, 0.18);
+  border-color: rgba(114, 176, 122, 0.24);
+}
+
+[data-theme="dark"] .client-portal-wrapper .date-box.new,
+[data-theme="dark"] .client-portal-wrapper .reschedule-selection-pill.accent,
+[data-theme="dark"] .client-portal-wrapper .duration-preview-card {
+  background: rgba(114, 176, 122, 0.14);
+  border-color: rgba(114, 176, 122, 0.2);
+}
+
+[data-theme="dark"] .client-portal-wrapper .calendar-panel-premium .react-datepicker__time-container {
+  background: rgba(17, 32, 50, 0.92);
+  border-left-color: rgba(171, 195, 217, 0.12) !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .calendar-panel-premium .react-datepicker__header--time {
+  background: rgba(13, 26, 41, 0.92) !important;
+  border-bottom-color: rgba(171, 195, 217, 0.12) !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .duration-quick-btn.selected {
+  background: rgba(114, 176, 122, 0.2);
+  color: #edf4fb;
+  border-color: rgba(114, 176, 122, 0.26);
+}
+
+@media (max-width: 1100px) {
+  .client-portal-wrapper .reschedule-modal-grid,
+  .client-portal-wrapper .reschedule-selection-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .client-portal-wrapper .reschedule-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .client-portal-wrapper .reschedule-modal-box {
+    max-width: calc(100vw - 0.9rem);
+    border-radius: 28px;
+  }
+
+  .client-portal-wrapper .reschedule-header,
+  .client-portal-wrapper .reschedule-modal-body,
+  .client-portal-wrapper .reschedule-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .client-portal-wrapper .reschedule-comparison-modern,
+  .client-portal-wrapper .reschedule-status-grid,
+  .client-portal-wrapper .duration-manual-row,
+  .client-portal-wrapper .calendar-panel-premium .react-datepicker {
+    grid-template-columns: 1fr;
+  }
+
+  .client-portal-wrapper .calendar-panel-premium .react-datepicker__time-container {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(32, 64, 96, 0.08);
+    border-radius: 18px;
+  }
+
+  .client-portal-wrapper .arrow-box {
+    margin: 0 auto;
+    transform: rotate(90deg);
+  }
+}
+
+/* Portal polish v56: visible actions, calmer reschedule/cancel flow */
+.client-portal-wrapper .ticket-wrapper:not(.fade-out-exit) {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.client-portal-wrapper .ticket-card {
+  overflow: visible;
+}
+
+.client-portal-wrapper .ticket-card .ticket-footer {
+  position: relative;
+  z-index: 2;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+  padding: clamp(1rem, 2vw, 1.25rem);
+  border-top: 1px solid rgba(32, 64, 96, 0.1);
+  background:
+    radial-gradient(circle at top right, rgba(114, 176, 122, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(248, 251, 253, 0.98), rgba(237, 243, 247, 0.96));
+}
+
+.client-portal-wrapper .ticket-card .ticket-footer .cancelled-note,
+.client-portal-wrapper .ticket-card .ticket-footer .btn-delete-forever {
+  grid-column: 1 / -1;
+}
+
+.client-portal-wrapper .ticket-card .ticket-footer .btn-action {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-radius: 18px;
+  font-size: 0.98rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.client-portal-wrapper .ticket-card .ticket-footer .btn-reschedule {
+  border-color: rgba(114, 176, 122, 0.26);
+  background: linear-gradient(135deg, #1d344d, #2b5478 64%, #4f8f58);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(29, 52, 77, 0.18);
+}
+
+.client-portal-wrapper .ticket-card .ticket-footer .btn-reschedule:hover,
+.client-portal-wrapper .ticket-card .ticket-footer .btn-reschedule:focus-visible {
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 22px 38px rgba(29, 52, 77, 0.22),
+    0 0 0 4px rgba(114, 176, 122, 0.14);
+}
+
+.client-portal-wrapper .ticket-card .ticket-footer .btn-cancel {
+  border-color: rgba(220, 38, 38, 0.18);
+  background: linear-gradient(180deg, rgba(255, 247, 247, 0.98), rgba(254, 226, 226, 0.92));
+  color: #991b1b;
+}
+
+.client-portal-wrapper .ticket-card .ticket-footer .btn-cancel:hover,
+.client-portal-wrapper .ticket-card .ticket-footer .btn-cancel:focus-visible {
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.client-portal-wrapper .modal-box.reschedule-modal-box {
+  width: min(1080px, calc(100vw - 1rem));
+  max-height: min(92vh, 920px);
+  border-radius: 30px;
+}
+
+.client-portal-wrapper .reschedule-modal-box .reschedule-header,
+.client-portal-wrapper .reschedule-modal-box .reschedule-modal-body,
+.client-portal-wrapper .reschedule-modal-box .reschedule-footer {
+  padding-left: clamp(1rem, 2.3vw, 1.55rem);
+  padding-right: clamp(1rem, 2.3vw, 1.55rem);
+}
+
+.client-portal-wrapper .reschedule-modal-box .reschedule-modal-grid {
+  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+  gap: clamp(0.85rem, 1.7vw, 1.1rem);
+}
+
+.client-portal-wrapper .reschedule-modal-box .reschedule-overview-panel,
+.client-portal-wrapper .reschedule-modal-box .reschedule-editor-panel {
+  min-width: 0;
+}
+
+.client-portal-wrapper .reschedule-modal-box .reschedule-comparison-modern,
+.client-portal-wrapper .reschedule-modal-box .reschedule-status-grid,
+.client-portal-wrapper .reschedule-modal-box .reschedule-selection-strip {
+  gap: 0.7rem;
+}
+
+.client-portal-wrapper .reschedule-modal-box .date-box {
+  min-height: 132px;
+}
+
+.client-portal-wrapper .reschedule-modal-box .reschedule-mini-facts article,
+.client-portal-wrapper .reschedule-modal-box .reschedule-selection-pill {
+  min-height: 88px;
+  padding: 0.82rem 0.9rem;
+}
+
+.client-portal-wrapper .reschedule-modal-box .calendar-panel-premium {
+  padding: 0.9rem;
+}
+
+.client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker {
+  grid-template-columns: minmax(0, 1fr) minmax(118px, 132px) !important;
+  gap: 0.75rem;
+}
+
+.client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__day-names,
+.client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__week {
+  grid-template-columns: repeat(7, minmax(32px, 1fr)) !important;
+  gap: 4px !important;
+}
+
+.client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__day-name,
+.client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__day {
+  width: 36px !important;
+  justify-self: center;
+}
+
+.client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__day {
+  height: 36px !important;
+  line-height: 36px !important;
+  margin-bottom: 0.25rem !important;
+  border-radius: 13px !important;
+}
+
+.client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__time-list {
+  height: 292px !important;
+}
+
+.client-portal-wrapper .reschedule-modal-box .duration-panel-premium {
+  padding: 0.9rem;
+}
+
+.client-portal-wrapper .reschedule-modal-box .duration-quick-grid {
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+}
+
+.client-portal-wrapper .reschedule-modal-box .duration-quick-btn {
+  min-height: 46px;
+}
+
+.client-portal-wrapper .modal-box.cancel-soft-modal {
+  width: min(620px, calc(100vw - 1rem));
+  border-radius: 28px;
+}
+
+.client-portal-wrapper .cancel-soft-modal .cancel-soft-summary {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+
+.client-portal-wrapper .cancel-soft-modal .cancel-soft-summary article {
+  min-height: 88px;
+  padding: 0.9rem;
+}
+
+.client-portal-wrapper .cancel-soft-modal .cancel-soft-note {
+  align-items: flex-start;
+  line-height: 1.58;
+}
+
+[data-theme="dark"] .client-portal-wrapper .ticket-card .ticket-footer {
+  border-top-color: rgba(171, 195, 217, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(114, 176, 122, 0.1), transparent 34%),
+    linear-gradient(180deg, rgba(17, 32, 50, 0.96), rgba(13, 26, 41, 0.96));
+}
+
+[data-theme="dark"] .client-portal-wrapper .ticket-card .ticket-footer .btn-reschedule {
+  background: linear-gradient(135deg, #204060, #2b5478 62%, #72b07a);
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .ticket-card .ticket-footer .btn-cancel {
+  border-color: rgba(248, 113, 113, 0.24);
+  background: linear-gradient(180deg, rgba(87, 29, 29, 0.44), rgba(69, 16, 16, 0.52));
+  color: #fecaca;
+}
+
+@media (max-width: 1180px) {
+  .client-portal-wrapper .reschedule-modal-box .reschedule-modal-grid,
+  .client-portal-wrapper .reschedule-modal-box .reschedule-selection-strip {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .client-portal-wrapper .ticket-card .ticket-footer,
+  .client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker,
+  .client-portal-wrapper .reschedule-modal-box .duration-manual-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__time-container {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(32, 64, 96, 0.08);
+  }
+
+  .client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__day-name,
+  .client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__day {
+    width: clamp(30px, 11vw, 38px) !important;
+  }
+
+  .client-portal-wrapper .reschedule-modal-box .calendar-panel-premium .react-datepicker__day {
+    height: clamp(30px, 11vw, 38px) !important;
+    line-height: clamp(30px, 11vw, 38px) !important;
+  }
+}

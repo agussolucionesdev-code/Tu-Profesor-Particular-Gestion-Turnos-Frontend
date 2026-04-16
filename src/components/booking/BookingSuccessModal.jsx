@@ -5,10 +5,16 @@ import {
   FaCopy,
   FaEnvelope,
   FaExclamationCircle,
+  FaIdCard,
   FaInfoCircle,
+  FaPhoneAlt,
   FaSearch,
+  FaUserGraduate,
+  FaUserTie,
   FaWhatsapp,
 } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import logoIcon from "../../assets/images/logo-icon-sin-fondo.png";
 
 const getDeliveryAlert = (successData) => {
   const emailRecipient = successData?.notifications?.client?.recipient;
@@ -19,7 +25,7 @@ const getDeliveryAlert = (successData) => {
       type: "success",
       icon: <FaEnvelope />,
       title: "Comprobante enviado",
-      body: `Tambien enviamos el detalle a ${emailRecipient}.`,
+      body: `También enviamos el detalle a ${emailRecipient}.`,
     };
   }
 
@@ -27,18 +33,18 @@ const getDeliveryAlert = (successData) => {
     return {
       type: "warning",
       icon: <FaExclamationCircle />,
-      title: "Guarda el codigo por las dudas",
+      title: "Guardá el código por las dudas",
       body:
-        "La reserva quedo confirmada. Si el correo tarda en aparecer, puedes volver a encontrar el turno desde Mis Turnos con tu codigo, email o WhatsApp.",
+        "La reserva quedó confirmada. Si el correo tarda un poco, podés volver a encontrar el turno desde Mis Turnos con tu código, email o número de teléfono.",
     };
   }
 
   return {
     type: "info",
     icon: <FaInfoCircle />,
-    title: "Gestion sin email",
+    title: "Gestión sin email",
     body:
-      "No cargaste email, asi que el codigo de gestion pasa a ser tu referencia principal para volver a entrar desde Mis Turnos.",
+      "No cargaste email, así que el código de gestión pasa a ser tu referencia principal para volver a entrar desde Mis Turnos.",
   };
 };
 
@@ -53,133 +59,254 @@ const BookingSuccessModal = ({
 
   const deliveryAlert = getDeliveryAlert(successData);
   const managementMethods = successData?.managementMethods || [];
+  const nextSteps = [
+    {
+      step: "1",
+      title: "Guardá el código",
+      body: "Es la forma más directa de entrar después desde Mis Turnos.",
+    },
+    {
+      step: "2",
+      title: "Volvé cuando quieras",
+      body: "Si te queda más cómodo, también sirven el email o el número de teléfono cargados.",
+    },
+    {
+      step: "3",
+      title: "Gestioná sin vueltas",
+      body: "Desde el portal podés revisar, reprogramar o cancelar la reserva.",
+    },
+  ];
 
   return (
     <div className="neuro-modal-overlay">
       <div
-        className="neuro-modal-card success-modal-card"
+        className="neuro-modal-card success-modal-card success-modal-card-wide"
         role="dialog"
         aria-modal="true"
         aria-labelledby="booking-success-title"
       >
         <div className="modal-top-accent"></div>
 
-        <div className="success-hero-band">
-          <div className="success-check-animation">
-            <FaCheckCircle />
-          </div>
-          <span className="success-eyebrow">Reserva confirmada</span>
-          <h2 id="booking-success-title">Tu turno ya quedo listo para gestionar</h2>
-          <p>
-            Todo lo importante queda reunido aca: codigo, fecha, horario y la
-            forma mas facil de volver a encontrar la reserva.
-          </p>
-        </div>
+        <div className="success-modal-shell">
+          <div className="success-main-column">
+            <div className="success-hero-band">
+              <div className="success-hero-topline">
+                <div className="success-hero-badge">
+                  <div className="success-check-animation">
+                    <FaCheckCircle />
+                  </div>
+                  <span className="success-eyebrow">Reserva confirmada</span>
+                </div>
 
-        <div className="modal-body success-modal-body">
-          <section className="success-code-panel">
-            <div>
-              <span className="success-code-kicker">Codigo de gestion</span>
-              <h3>{successData?.bookingCode}</h3>
+                <div className="success-brand-lockup">
+                  <img src={logoIcon} alt="" aria-hidden="true" />
+                  <div>
+                    <strong>Tu Profesor Particular</strong>
+                    <span>Agustín Elías Sosa</span>
+                  </div>
+                </div>
+              </div>
+
+              <h2 id="booking-success-title">Tu turno ya quedó listo</h2>
               <p>
-                Guardalo tal cual aparece. En{" "}
-                <strong>Mis Turnos</strong> puedes usar este codigo para revisar,
-                reprogramar o cancelar la reserva.
+                Guardá el código una vez y luego gestioná todo desde Mis
+                Turnos con una experiencia más simple, clara y agradable.
               </p>
-            </div>
 
-            <button
-              type="button"
-              className="btn-copy-code prominent"
-              onClick={onCopyCode}
-            >
-              <FaCopy /> Copiar codigo
-            </button>
-          </section>
-
-          <section className="success-summary-grid">
-            <article className="success-summary-card">
-              <span>
-                <FaCalendarAlt /> Dia
-              </span>
-              <strong>{successData?.day}</strong>
-            </article>
-            <article className="success-summary-card">
-              <span>
-                <FaClock /> Horario
-              </span>
-              <strong>
-                {successData?.startTime} a {successData?.endTime} hs
-              </strong>
-            </article>
-            <article className="success-summary-card">
-              <span>Alumno</span>
-              <strong>{successData?.cleanStudentName}</strong>
-            </article>
-            <article className="success-summary-card">
-              <span>Materia</span>
-              <strong>{successData?.subject}</strong>
-            </article>
-            <article className="success-summary-card">
-              <span>Nivel</span>
-              <strong>{successData?.educationLevel}</strong>
-            </article>
-            <article className="success-summary-card">
-              <span>Institucion</span>
-              <strong>{successData?.school}</strong>
-            </article>
-          </section>
-
-          <section className="success-management-card">
-            <div className="success-management-head">
-              <FaSearch />
-              <div>
-                <strong>Como volver a encontrar este turno</strong>
-                <p>
-                  En la seccion <strong>Mis Turnos</strong> puedes buscar con
-                  cualquiera de estos datos:
-                </p>
+              <div className="success-hero-inline-facts">
+                <span>
+                  <FaCalendarAlt /> {successData?.day}
+                </span>
+                <span>
+                  <FaClock /> {successData?.startTime} a {successData?.endTime} hs
+                </span>
+                <span>
+                  <FaInfoCircle />{" "}
+                  {successData?.durationLabel ||
+                    `${successData?.actualDuration || "--"} hs`}
+                </span>
               </div>
             </div>
 
-            <div className="success-management-grid">
-              {managementMethods.map((method) => (
-                <article key={method.label} className="success-management-pill">
-                  <span>{method.label}</span>
-                  <strong>{method.value}</strong>
-                  <small>{method.helper}</small>
+            <div className="modal-body success-modal-body">
+              <section className="success-code-panel success-code-panel-prominent">
+                <div className="success-code-copy">
+                  <span className="success-code-kicker">Código de gestión</span>
+                  <h3>{successData?.bookingCode}</h3>
+                  <p>
+                    Guárdalo tal cual aparece. En <strong>Mis Turnos</strong>{" "}
+                    podés usar este código para revisar, reprogramar o
+                    cancelar la reserva sin fricción.
+                  </p>
+                </div>
+
+                <div className="success-code-actions">
+                  <button
+                    type="button"
+                    className="btn-copy-code prominent"
+                    onClick={onCopyCode}
+                  >
+                    <FaCopy /> Copiar código
+                  </button>
+                  <p className="success-code-helper">
+                    También queda asociado a tus otros datos de acceso para que
+                    siempre tengas una forma cómoda de volver.
+                  </p>
+                </div>
+              </section>
+
+              <section className="success-summary-grid success-summary-grid-wide">
+                <article className="success-summary-card summary-card-spotlight">
+                  <span>
+                    <FaCalendarAlt /> Día
+                  </span>
+                  <strong>{successData?.day}</strong>
                 </article>
-              ))}
-            </div>
-          </section>
 
-          <div className={`delivery-alert ${deliveryAlert.type}`}>
-            <div className="delivery-alert-icon">{deliveryAlert.icon}</div>
-            <div>
-              <strong>{deliveryAlert.title}</strong>
-              <span>{deliveryAlert.body}</span>
+                <article className="success-summary-card summary-card-spotlight">
+                  <span>
+                    <FaClock /> Horario
+                  </span>
+                  <strong>
+                    {successData?.startTime} a {successData?.endTime} hs
+                  </strong>
+                </article>
+
+                <article className="success-summary-card summary-card-spotlight">
+                  <span>
+                    <FaInfoCircle /> Duración
+                  </span>
+                  <strong>
+                    {successData?.durationLabel ||
+                      `${successData?.actualDuration || "--"} hs`}
+                  </strong>
+                </article>
+
+                <article className="success-summary-card">
+                  <span>
+                    <FaUserGraduate /> Alumno
+                  </span>
+                  <strong>{successData?.cleanStudentName}</strong>
+                </article>
+
+                <article className="success-summary-card">
+                  <span>
+                    <FaUserTie /> Responsable
+                  </span>
+                  <strong>{successData?.responsibleLabel}</strong>
+                </article>
+
+                <article className="success-summary-card">
+                  <span>
+                    <FaIdCard /> Parentesco
+                  </span>
+                  <strong>{successData?.responsibleRelationshipLabel}</strong>
+                </article>
+
+                <article className="success-summary-card">
+                  <span>
+                    <FaInfoCircle /> Materia
+                  </span>
+                  <strong>{successData?.subject}</strong>
+                </article>
+
+                <article className="success-summary-card">
+                  <span>
+                    <FaInfoCircle /> Nivel
+                  </span>
+                  <strong>{successData?.educationLevel}</strong>
+                </article>
+
+                <article className="success-summary-card">
+                  <span>
+                    <FaInfoCircle /> Institución
+                  </span>
+                  <strong>{successData?.school}</strong>
+                </article>
+              </section>
             </div>
           </div>
 
-          <div className="delivery-alert info subdued">
-            <div className="delivery-alert-icon">
-              <FaInfoCircle />
+          <aside className="success-side-column">
+            <section className="success-next-steps-card">
+              <div className="success-management-head">
+                <FaCheckCircle />
+                <div>
+                  <strong>Cómo seguir desde aquí</strong>
+                  <p>
+                    Todo quedó ordenado para que vuelvas después sin perderte.
+                  </p>
+                </div>
+              </div>
+
+              <div className="success-step-list">
+                {nextSteps.map((item) => (
+                  <article key={item.step} className="success-step-item">
+                    <span className="success-step-badge">{item.step}</span>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>{item.body}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="success-management-card">
+              <div className="success-management-head">
+                <FaSearch />
+                <div>
+                  <strong>Cómo volver a encontrar este turno</strong>
+                  <p>
+                    En la sección <strong>Mis Turnos</strong> podés buscar con
+                    cualquiera de estos datos y gestionar la reserva en pocos
+                    pasos.
+                  </p>
+                </div>
+              </div>
+
+              <div className="success-management-grid">
+                {managementMethods.map((method) => (
+                  <article
+                    key={method.label}
+                    className="success-management-pill"
+                  >
+                    <span>{method.label}</span>
+                    <strong>{method.value}</strong>
+                    <small>{method.helper}</small>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <div className={`delivery-alert ${deliveryAlert.type}`}>
+              <div className="delivery-alert-icon">{deliveryAlert.icon}</div>
+              <div>
+                <strong>{deliveryAlert.title}</strong>
+                <span>{deliveryAlert.body}</span>
+              </div>
             </div>
-            <div>
-              <strong>Donde usar el codigo</strong>
-              <span>
-                Ve a <strong>Mis Turnos</strong> cuando quieras gestionar la
-                reserva. Si no tienes el codigo a mano, tambien sirven el email
-                o el WhatsApp cargados.
-              </span>
+
+            <div className="delivery-alert info subdued">
+              <div className="delivery-alert-icon">
+                <FaPhoneAlt />
+              </div>
+              <div>
+                <strong>Dónde usar el código</strong>
+                <span>
+                  Andá a <strong>Mis Turnos</strong> cuando quieras gestionar la
+                  reserva. Si no tenés el código a mano, también sirven el
+                  email o el número de teléfono cargados.
+                </span>
+              </div>
             </div>
-          </div>
+          </aside>
         </div>
 
         <div className="modal-actions success-modal-actions">
-          <a href="/portal" className="btn-portal-primary">
+          <Link to="/portal" className="btn-portal-primary">
             <FaSearch /> Ir a Mis Turnos
-          </a>
+          </Link>
 
           <div className="success-secondary-actions">
             <a

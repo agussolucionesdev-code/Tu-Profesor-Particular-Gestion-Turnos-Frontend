@@ -1,4 +1,11 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  startTransition,
+} from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import DatePicker, { registerLocale } from "react-datepicker";
@@ -30,26 +37,45 @@ import {
   FaCalendarCheck,
   FaArrowRight,
   FaArrowLeft,
+  FaHourglassHalf,
   FaUserCheck,
+  FaShieldAlt,
+  FaTicketAlt,
   FaTimesCircle,
   FaIdCard,
   FaGraduationCap,
   FaUserLock,
   FaChevronLeft,
   FaChevronRight,
+  FaSearchPlus,
   FaTimes,
 } from "react-icons/fa";
 import BookingConfirmationSummary from "./booking/BookingConfirmationSummary";
 import BookingSuccessModal from "./booking/BookingSuccessModal";
 import { BOOKING_SUPPORT_PILLS, WIZARD_STEPS } from "../constants/bookingWizard";
 import {
+  ADULT_RELATIONSHIP_VALUE,
   formatDurationOptionLabel,
+  formatDurationVoiceLabel,
   formatPhoneMaskAr,
+  formatResponsibleRelationshipLabel,
   getBookingApiMessage,
+  RESPONSIBLE_RELATIONSHIP_OPTIONS,
+  RESPONSIBLE_RELATIONSHIP_OTHER_VALUE,
   sanitizePersonNameAr,
+  sanitizeRelationshipOtherAr,
 } from "../utils/bookingFormatters";
+import {
+  primeVoicePlayback,
+  speakAlert,
+  spellCodeForVoice,
+  useNeuroToast,
+} from "../utils/neuroToast";
 import "../index.css";
 import "./BookingForm.css";
+import "./booking/BookingFinalExperience.css";
+import "../styles/theme-polish.css";
+import "../styles/accessibility-system.css";
 
 registerLocale("es", es);
 
@@ -64,6 +90,19 @@ const unlockSound = new Audio(
   "https://assets.mixkit.co/active_storage/sfx/2997/2997-preview.mp3",
 );
 
+const STEP_VOICE_OPTIONS = {
+  rate: 0.9,
+  pitch: 1.05,
+  volume: 1,
+};
+
+const STEP_VOICE_GUIDANCE = {
+  1: "Empezamos simple. Completá solo lo necesario y avanzamos de a poco, sin apuro. Yo te acompaño para que el turno quede claro desde el primer intento.",
+  2: "Muy bien. Ahora elegí el día que te dé más tranquilidad. Te muestro opciones disponibles para que no tengas que adivinar ni preocuparte por cruces.",
+  3: "Ya tenemos el día. Elegí el horario que mejor encaje con tu rutina; cuando lo marques, te llevo al resumen para cerrar todo con calma.",
+  4: "Último tramo. Revisá el resumen, elegí la duración ideal y confirmamos solo cuando todo se sienta correcto.",
+};
+
 const BookingForm = () => {
   const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4100";
   const supportPillIcons = [FaCheckCircle, FaWhatsapp, FaUserLock];
@@ -71,9 +110,12 @@ const BookingForm = () => {
   const slideRefs = useRef({});
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [slideDirection, setSlideDirection] = useState("forward");
   const [isAdult, setIsAdult] = useState(false);
   const [formData, setFormData] = useState({
     responsibleName: "",
+    responsibleRelationship: "",
+    responsibleRelationshipOther: "",
     studentName: "",
     email: "",
     phone: "",
@@ -90,9 +132,16 @@ const BookingForm = () => {
   const [existingBookings, setExistingBookings] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [successData, setSuccessData] = useState(null);
-  const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const { toast, showToast } = useNeuroToast({ duration: 4500 });
   const [availableSlots, setAvailableSlots] = useState([]);
   const [sliderHeight, setSliderHeight] = useState(0);
+  const [isDesktopCalendarViewport, setIsDesktopCalendarViewport] = useState(
+    () => {
+      if (typeof window === "undefined") return false;
+      return window.matchMedia("(min-width: 1024px)").matches;
+    },
+  );
+  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
 
   const [hasAttemptedNext, setHasAttemptedNext] = useState(false);
 
@@ -110,11 +159,6 @@ const BookingForm = () => {
     unlockSound.play().catch(() => {});
   };
 
-  const showToast = (message, type = "error") => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: "", type: "" }), 4500);
-  };
-
   const syncSliderHeight = useCallback(() => {
     const activePanel = slideRefs.current[currentStep];
     if (!activePanel) return;
@@ -125,14 +169,85 @@ const BookingForm = () => {
     }
   }, [currentStep]);
 
-  const smoothScrollToTop = () => {
-    setTimeout(() => {
-      window.scrollTo({
-        top: window.innerWidth < 768 ? 50 : 120,
-        behavior: "smooth",
+  const smoothScrollToStep = useCallback(
+    (
+      targetStep = currentStep,
+      { selector = ".section-title", delay = 170 } = {},
+    ) => {
+      if (typeof window === "undefined") return;
+
+      window.setTimeout(() => {
+        const navHeight =
+          document
+            .querySelector(".navbar-elite")
+            ?.getBoundingClientRect().height ?? 0;
+        const activePanel = slideRefs.current[targetStep];
+        const scrollAnchor =
+          (selector ? activePanel?.querySelector(selector) : null) ||
+          activePanel?.querySelector(".section-title") ||
+          formCardRef.current?.querySelector(".journey-compass") ||
+          formCardRef.current;
+
+        if (!scrollAnchor) return;
+
+        const prefersReducedMotion = window.matchMedia?.(
+          "(prefers-reduced-motion: reduce)",
+        )?.matches;
+        const breathingRoom = window.innerWidth < 768 ? 14 : 24;
+        const top =
+          scrollAnchor.getBoundingClientRect().top +
+          window.scrollY -
+          navHeight -
+          breathingRoom;
+
+        window.scrollTo({
+          top: Math.max(0, top),
+          behavior: prefersReducedMotion ? "auto" : "smooth",
+        });
+
+        // Guide Focus: Focus the first invalid or first empty field in the step
+        if (targetStep === 1) {
+          const firstField = activePanel.querySelector("input, select, textarea");
+          firstField?.focus({ preventScroll: true });
+        }
+      }, delay);
+    },
+    [currentStep],
+  );
+
+  const speakWarmGuidance = useCallback((message) => {
+    if (!message) return;
+
+    const didStartVoice = primeVoicePlayback({
+      message,
+      voiceOptions: STEP_VOICE_OPTIONS,
+    });
+
+    if (!didStartVoice) {
+      speakAlert(message, STEP_VOICE_OPTIONS);
+    }
+  }, []);
+
+  const scrollToStepAction = useCallback(
+    (targetStep = currentStep) => {
+      smoothScrollToStep(targetStep, {
+        selector:
+          ".btn-stage-next.is-ready, .btn-neuro-primary.btn-ready, .btn-neuro-success.ready-to-pulse, .calendar-selection-banner.is-active, .duration-summary-card.is-ready",
+        delay: 260,
       });
-    }, 100);
-  };
+    },
+    [currentStep, smoothScrollToStep],
+  );
+
+  const scrollToStepIssue = useCallback(
+    (targetStep = currentStep, selector = ".section-title") => {
+      smoothScrollToStep(targetStep, {
+        selector,
+        delay: 140,
+      });
+    },
+    [currentStep, smoothScrollToStep],
+  );
 
   useEffect(() => {
     const activeTitle = formCardRef.current?.querySelector(
@@ -185,6 +300,53 @@ const BookingForm = () => {
   }, [formData.academicSituation]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return undefined;
+    }
+
+    const media = window.matchMedia("(min-width: 1024px)");
+    const syncViewport = (event) => setIsDesktopCalendarViewport(event.matches);
+
+    setIsDesktopCalendarViewport(media.matches);
+    media.addEventListener("change", syncViewport);
+
+    return () => media.removeEventListener("change", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktopCalendarViewport || currentStep !== 2) {
+      setIsCalendarExpanded(false);
+    }
+  }, [currentStep, isDesktopCalendarViewport]);
+
+  useEffect(() => {
+    if (!isCalendarExpanded) return undefined;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsCalendarExpanded(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isCalendarExpanded]);
+
+  useEffect(() => {
     const fetchBookings = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/bookings/availability`);
@@ -197,7 +359,7 @@ const BookingForm = () => {
       }
     };
     fetchBookings();
-  }, [API_URL]);
+  }, [API_URL, showToast]);
 
   useEffect(() => {
     if (!formData.timeSlot) return;
@@ -248,6 +410,16 @@ const BookingForm = () => {
           formData.responsibleName.trim().length > 0 &&
           regexName.test(formData.responsibleName.trim())
         );
+      case "responsibleRelationship":
+        return isAdult
+          ? true
+          : RESPONSIBLE_RELATIONSHIP_OPTIONS.some(
+              (option) => option.value === formData.responsibleRelationship,
+            );
+      case "responsibleRelationshipOther":
+        return formData.responsibleRelationship !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
+          ? true
+          : regexName.test(formData.responsibleRelationshipOther.trim());
       case "email":
         return (
           formData.email.trim().length > 0 &&
@@ -272,10 +444,21 @@ const BookingForm = () => {
 
   const isEmailValidOrEmpty =
     formData.email.trim() === "" || isValidField("email");
+  const adultModeLocked =
+    !isAdult &&
+    [
+      formData.responsibleName,
+      formData.responsibleRelationship,
+      formData.responsibleRelationshipOther,
+    ].some((value) => String(value ?? "").trim().length > 0);
   const isPersonalInfoComplete =
     isValidField("studentName") &&
     isValidField("phone") &&
-    (isAdult ? true : isValidField("responsibleName")) &&
+    (isAdult
+      ? true
+      : isValidField("responsibleName") &&
+        isValidField("responsibleRelationship") &&
+        isValidField("responsibleRelationshipOther")) &&
     isEmailValidOrEmpty;
   const isAcademicInfoComplete =
     isValidField("educationLevel") &&
@@ -285,10 +468,21 @@ const BookingForm = () => {
   const canProceedToStep2 = isPersonalInfoComplete && isAcademicInfoComplete;
   const currentStepInfo = WIZARD_STEPS.find((step) => step.id === currentStep);
   const nextStepInfo = WIZARD_STEPS.find((step) => step.id === currentStep + 1);
+  const stepperFlowCopy = nextStepInfo
+    ? `Completá este tramo y enseguida seguimos con ${nextStepInfo.label.toLowerCase()}.`
+    : "Ya estás en el cierre final: revisá el resumen y confirmá tu reserva.";
+  const stepperInteractionCopy =
+    currentStep > 1
+      ? "Podés tocar cualquier paso completado para volver sin perder lo que ya cargaste."
+      : "Vamos habilitando cada paso en orden para que la reserva quede clara, prolija y sin errores.";
+  const isTimeSelected = Boolean(
+    formData.timeSlot && formData.timeSlot.getHours() !== 0,
+  );
   const requiredChecks = [
     isValidField("studentName"),
     isValidField("phone"),
     isAdult ? true : isValidField("responsibleName"),
+    isAdult ? true : isValidField("responsibleRelationship"),
     isValidField("educationLevel"),
     isValidField("yearGrade"),
     isValidField("subject"),
@@ -298,6 +492,8 @@ const BookingForm = () => {
   const completionPercent = Math.round(
     (completedRequiredFields / requiredChecks.length) * 100,
   );
+  const stepProgressWidth =
+    ((currentStep - 1) / Math.max(WIZARD_STEPS.length - 1, 1)) * 100;
   const confirmationDateLabel =
     formData.timeSlot && formData.timeSlot.getHours() > 0
       ? format(formData.timeSlot, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })
@@ -316,8 +512,16 @@ const BookingForm = () => {
             : "--:--"
         } hs`
       : "";
+  const confirmationEducationLabel = [formData.educationLevel, formData.yearGrade]
+    .filter(Boolean)
+    .join(" - ");
   const confirmationLookupHint =
-    "Despues de confirmar te mostramos un codigo grande para usar en Mis Turnos. Si no lo tienes a mano, tambien puedes entrar con el email o el WhatsApp cargados.";
+    "Después de confirmar te mostramos un código grande para usar en Mis Turnos. Si no lo tenés a mano, también podés entrar con el email o el número de teléfono cargados.";
+  const responsibleRelationshipLabel = formatResponsibleRelationshipLabel(
+    isAdult ? ADULT_RELATIONSHIP_VALUE : formData.responsibleRelationship,
+    formData.responsibleRelationshipOther,
+  );
+  const isConfirmationReady = Number(formData.duration) >= 0.5;
 
   const getFieldStateClass = (field, isOptional = false) => {
     if (isValidField(field)) return "is-valid";
@@ -350,20 +554,76 @@ const BookingForm = () => {
     if (name === "studentName" || name === "responsibleName") {
       finalValue = sanitizePersonNameAr(value);
     }
+    if (name === "responsibleRelationshipOther") {
+      finalValue = sanitizeRelationshipOtherAr(value);
+    }
     if (name === "phone") finalValue = formatPhoneMaskAr(value);
     if (name === "email") finalValue = value.trimStart().toLowerCase();
     setFormData((prev) => {
       const newData = { ...prev, [name]: finalValue };
       if (name === "educationLevel") newData.yearGrade = "";
+      if (name === "responsibleRelationship" && value !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE) {
+        newData.responsibleRelationshipOther = "";
+      }
       return newData;
     });
+
+    // --- Invisible Guide Logic ---
+    // If the current field just became valid, guide the user to the next one
+    if (isValidField(name)) {
+      const fieldsOrder = [
+        "studentName",
+        "phone",
+        "responsibleName",
+        "responsibleRelationship",
+        "responsibleRelationshipOther",
+        "email",
+        "educationLevel",
+        "yearGrade",
+        "subject",
+        "school",
+      ];
+      const currentIndex = fieldsOrder.indexOf(name);
+      if (currentIndex !== -1 && currentIndex < fieldsOrder.length - 1) {
+        const nextField = fieldsOrder[currentIndex + 1];
+        // Only guide if it's the same step and the next field is not yet valid
+        if (currentStep === 1 && !isValidField(nextField)) {
+           const nextInput = document.getElementsByName(nextField)[0];
+           if (nextInput) {
+             nextInput.focus({ preventScroll: true });
+             smoothScrollToStep(currentStep, {
+               selector: `[name="${nextField}"]`,
+               delay: 100,
+             });
+           }
+        }
+      }
+    }
   };
 
   const toggleAdultMode = () => {
+    if (adultModeLocked) {
+      showToast(
+        "Para pasar a alumno mayor de edad, primero limpia los datos del adulto responsable.",
+        "info",
+        {
+          title: "Opción momentáneamente bloqueada",
+          speak:
+            "Si quieres pasar a alumno mayor de edad, primero quita los datos del adulto responsable que ya cargaste.",
+        },
+      );
+      return;
+    }
+
     setIsAdult((current) => {
       const next = !current;
       if (next) {
-        setFormData((prev) => ({ ...prev, responsibleName: "" }));
+        setFormData((prev) => ({
+          ...prev,
+          responsibleName: "",
+          responsibleRelationship: "",
+          responsibleRelationshipOther: "",
+        }));
       }
       return next;
     });
@@ -382,22 +642,22 @@ const BookingForm = () => {
       ];
     if (level === "Secundaria" || level === "Secundaria Tecnica")
       return [
-        "1er ano",
-        "2do ano",
-        "3er ano",
-        "4to ano",
-        "5to ano",
-        "6to ano",
-        level === "Secundaria Tecnica" ? "7mo ano" : null,
+        "1er año",
+        "2do año",
+        "3er año",
+        "4to año",
+        "5to año",
+        "6to año",
+        level === "Secundaria Tecnica" ? "7mo año" : null,
       ].filter(Boolean);
     if (level === "Terciario" || level === "Universitario")
       return [
-        "1er ano",
-        "2do ano",
-        "3er ano",
-        "4to ano",
-        "5to ano",
-        "6to ano",
+        "1er año",
+        "2do año",
+        "3er año",
+        "4to año",
+        "5to año",
+        "6to año",
         "Avanzado",
       ];
     return [];
@@ -409,14 +669,31 @@ const BookingForm = () => {
       showToast(
         "Faltan algunos datos. Revisa los campos resaltados para continuar.",
         "error",
+        {
+          title: "Revisemos este paso",
+          speak:
+            "Nos falta completar algunos datos. No pasa nada: revisá los campos señalados con calma y seguimos cuando esté listo.",
+          voiceOptions: STEP_VOICE_OPTIONS,
+        },
+      );
+      scrollToStepIssue(
+        1,
+        ".premium-input.error, .neuro-input-wrapper.error, .neuro-toggle-wrapper.error, .section-title",
       );
       return false;
     }
     if (step === 2 && !formData.timeSlot) {
       showToast(
-        "Elige una fecha en el calendario para descubrir los horarios libres.",
+        "Elegí una fecha en el calendario para descubrir los horarios libres.",
         "warning",
+        {
+          title: "Elegí una fecha",
+          speak:
+            "Para seguir, elegí una fecha disponible en el calendario. Después te llevo a los horarios libres, paso a paso.",
+          voiceOptions: STEP_VOICE_OPTIONS,
+        },
       );
+      scrollToStepIssue(2, ".calendar-glass-box, .section-title");
       return false;
     }
     if (
@@ -424,61 +701,129 @@ const BookingForm = () => {
       (!formData.timeSlot || formData.timeSlot.getHours() === 0)
     ) {
       showToast(
-        "Selecciona el horario que mejor se adapte a vos para continuar.",
+        "Seleccioná el horario que mejor se adapte a vos para continuar.",
         "warning",
+        {
+          title: "Falta el horario",
+          speak:
+            "Ya tenemos el día. Ahora elegí un horario libre que te resulte cómodo; después revisamos todo antes de confirmar.",
+          voiceOptions: STEP_VOICE_OPTIONS,
+        },
       );
+      scrollToStepIssue(3, ".slot-btn:not(.disabled), .section-title");
       return false;
     }
     return true;
   };
 
-  const handleStepClick = (targetStep) => {
+  const goToStep = (targetStep) => {
     if (targetStep === currentStep) return;
-    if (targetStep < currentStep) {
-      playStepSound();
+
+    setSlideDirection(targetStep > currentStep ? "forward" : "backward");
+    playStepSound();
+
+    startTransition(() => {
       setCurrentStep(targetStep);
-      smoothScrollToTop();
-    } else if (targetStep > currentStep) {
-      if (targetStep - currentStep > 1) {
-        showToast("Avanza paso a paso, por favor.", "warning");
-        return;
-      }
-      if (validateStep(currentStep)) {
-        playStepSound();
-        setCurrentStep(targetStep);
-        smoothScrollToTop();
-      }
-    }
+    });
+
+    smoothScrollToStep(targetStep);
+    speakWarmGuidance(STEP_VOICE_GUIDANCE[targetStep]);
+  };
+
+  const handleStepClick = (targetStep) => {
+    if (targetStep >= currentStep) return;
+    goToStep(targetStep);
   };
 
   const goToNext = () => {
     if (validateStep(currentStep)) {
-      playStepSound();
-      setCurrentStep((prev) => prev + 1);
       setHasAttemptedNext(false);
-      smoothScrollToTop();
+      goToStep(currentStep + 1);
     }
   };
 
   const goToPrev = () => {
-    playStepSound();
-    setCurrentStep((prev) => prev - 1);
-    smoothScrollToTop();
+    if (currentStep === 1) return;
+    goToStep(currentStep - 1);
+  };
+
+  const openCalendarExpanded = () => {
+    if (!isDesktopCalendarViewport) return;
+    setIsCalendarExpanded(true);
+  };
+
+  const closeCalendarExpanded = () => {
+    setIsCalendarExpanded(false);
+  };
+
+  const handleProceedToTimeStep = () => {
+    if (!formData.timeSlot) {
+      showToast(
+        "Elegí una fecha en el calendario para descubrir los horarios libres.",
+        "warning",
+        {
+          title: "Elegí una fecha",
+          speak:
+            "Primero elegí una fecha disponible. Apenas la marques, te dejo listo el avance a horarios sin que tengas que buscar de más.",
+          voiceOptions: STEP_VOICE_OPTIONS,
+        },
+      );
+      scrollToStepIssue(2, ".calendar-glass-box, .section-title");
+      return;
+    }
+
+    goToNext();
+  };
+
+  const handleProceedToConfirmationStep = () => {
+    if (!isTimeSelected) {
+      showToast(
+        "Seleccioná el horario que mejor se adapte a vos para continuar.",
+        "warning",
+        {
+          title: "Elegí un horario",
+          speak:
+            "Te falta elegir un horario libre. Cuando lo marques, avanzamos al resumen final para que confirmes con seguridad.",
+          voiceOptions: STEP_VOICE_OPTIONS,
+        },
+      );
+      scrollToStepIssue(3, ".slot-btn:not(.disabled), .section-title");
+      return;
+    }
+
+    goToNext();
   };
 
   const handleDateSelect = (date) => {
+    if (!date) return;
+
     if (formData.timeSlot && isSameDay(date, formData.timeSlot)) {
-      setFormData({ ...formData, timeSlot: null });
+      setFormData((prev) => ({ ...prev, timeSlot: null }));
       playStepSound();
+      scrollToStepIssue(2, ".calendar-glass-box, .calendar-selection-banner");
+      speakWarmGuidance(
+        "Fecha quitada. Elegí otro día disponible cuando quieras; seguimos con los horarios libres sin perder lo que ya completaste.",
+      );
     } else {
-      setFormData({ ...formData, timeSlot: startOfDay(date) });
+      setFormData((prev) => ({ ...prev, timeSlot: startOfDay(date) }));
       playUnlockSound();
+      if (isCalendarExpanded) {
+        setIsCalendarExpanded(false);
+      }
+      scrollToStepAction(2);
+      speakWarmGuidance(
+        "Fecha elegida. Bien: ahora tocá el botón para ver horarios disponibles y elegir el que te quede más cómodo.",
+      );
     }
   };
 
   const clearDateSelection = () => {
-    setFormData({ ...formData, timeSlot: null });
+    setFormData((prev) => ({ ...prev, timeSlot: null }));
     playStepSound();
+    scrollToStepIssue(2, ".calendar-glass-box, .calendar-selection-banner");
+    speakWarmGuidance(
+      "Fecha quitada. Cuando quieras, elegí otra fecha disponible y seguimos con calma.",
+    );
   };
 
   const handleTimeSelect = (timeObj) => {
@@ -486,17 +831,35 @@ const BookingForm = () => {
       formData.timeSlot &&
       formData.timeSlot.getTime() === timeObj.getTime()
     ) {
-      setFormData({ ...formData, timeSlot: startOfDay(formData.timeSlot) });
+      setFormData((prev) => ({
+        ...prev,
+        timeSlot: prev.timeSlot ? startOfDay(prev.timeSlot) : null,
+      }));
       playStepSound();
+      scrollToStepIssue(3, ".slot-btn:not(.disabled), .section-title");
+      speakWarmGuidance(
+        "Horario quitado. Elegí otro bloque libre y seguimos sin apuro.",
+      );
     } else {
-      setFormData({ ...formData, timeSlot: timeObj });
+      setFormData((prev) => ({ ...prev, timeSlot: timeObj }));
       playUnlockSound();
+      scrollToStepAction(3);
+      speakWarmGuidance(
+        `Horario elegido: a las ${format(timeObj, "HH:mm")}. Perfecto. Ahora revisamos el resumen y ajustamos la duración ideal.`,
+      );
     }
   };
 
   const clearTimeSelection = () => {
-    setFormData({ ...formData, timeSlot: startOfDay(formData.timeSlot) });
+    setFormData((prev) => ({
+      ...prev,
+      timeSlot: prev.timeSlot ? startOfDay(prev.timeSlot) : null,
+    }));
     playStepSound();
+    scrollToStepIssue(3, ".slot-btn:not(.disabled), .section-title");
+    speakWarmGuidance(
+      "Horario quitado. Podés tocar cualquier bloque libre para elegir uno nuevo.",
+    );
   };
 
   const getDayClassName = (date) => {
@@ -534,12 +897,20 @@ const BookingForm = () => {
     () => availableSlots.find((slot) => !slot.isOccupied)?.timeObj ?? null,
     [availableSlots],
   );
+  const selectedDayLabel = selectedDayOnly
+    ? format(selectedDayOnly, "EEEE d 'de' MMMM 'de' yyyy", {
+        locale: es,
+      })
+    : "";
+  const selectedTimeLabel = isTimeSelected
+    ? `${format(formData.timeSlot, "HH:mm")} hs`
+    : "";
 
   const slotSections = useMemo(() => {
     const sections = [
       {
         id: "morning",
-        label: "Manana",
+        label: "Mañana",
         helper: "07:00 a 11:30",
         match: (hour) => hour < 12,
       },
@@ -582,18 +953,24 @@ const BookingForm = () => {
   const handleDurationSelect = (duration) => {
     if (duration > maxAllowedDuration) {
       showToast(
-        `El limite para este turno es ${formatDurationOptionLabel(maxAllowedDuration)}.`,
+        `El límite para este turno es ${formatDurationOptionLabel(maxAllowedDuration)}.`,
         "warning",
       );
       return;
     }
     setFormData((prev) => ({ ...prev, duration }));
+    scrollToStepAction(4);
+    speakWarmGuidance(
+      `Duración elegida: ${formatDurationVoiceLabel(duration)}. Revisá el resumen con tranquilidad y confirmá solo si todo está correcto.`,
+    );
   };
 
   const resetFormAfterSuccess = () => {
     setShowModal(false);
     setFormData({
       responsibleName: "",
+      responsibleRelationship: "",
+      responsibleRelationshipOther: "",
       studentName: "",
       email: "",
       phone: "",
@@ -612,6 +989,7 @@ const BookingForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    primeVoicePlayback();
     setLoading(true);
     try {
       const dateObj = formData.timeSlot;
@@ -619,12 +997,21 @@ const BookingForm = () => {
       const finalResponsibleName = isAdult
         ? "Mayor de edad / Responsable"
         : formData.responsibleName;
+      const finalResponsibleRelationship = isAdult
+        ? ADULT_RELATIONSHIP_VALUE
+        : formData.responsibleRelationship;
+      const finalResponsibleRelationshipOther =
+        finalResponsibleRelationship === RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
+          ? formData.responsibleRelationshipOther.trim()
+          : "";
       const safeEmail = formData.email.trim() !== "" ? formData.email.trim() : "";
 
       const response = await axios.post(`${API_URL}/api/bookings/reserve`, {
         ...formData,
         email: safeEmail,
         responsibleName: finalResponsibleName,
+        responsibleRelationship: finalResponsibleRelationship,
+        responsibleRelationshipOther: finalResponsibleRelationshipOther,
         timeSlot: formattedDate,
         duration: Number(formData.duration),
         tutorName: "Agustin",
@@ -633,10 +1020,11 @@ const BookingForm = () => {
       successSound.play().catch(() => {});
 
       const end = addMinutes(dateObj, Number(formData.duration) * 60);
+      const bookingCode = response.data.data.bookingCode;
       const managementMethods = [
         {
-          label: "Codigo",
-          value: response.data.data.bookingCode,
+          label: "Código",
+          value: bookingCode,
           helper: "Pegalo tal cual en Mis Turnos.",
         },
         ...(safeEmail
@@ -644,36 +1032,51 @@ const BookingForm = () => {
               {
                 label: "Email",
                 value: safeEmail,
-                helper: "Tambien te sirve para volver a encontrar la reserva.",
+                helper: "También te sirve para volver a encontrar la reserva.",
               },
             ]
           : []),
         ...(formData.phone
           ? [
               {
-                label: "WhatsApp",
+                label: "Teléfono",
                 value: formData.phone,
-                helper: "Usa el mismo numero que cargaste al reservar.",
+                helper: "Usa el mismo número que cargaste al reservar.",
               },
             ]
           : []),
       ];
       setSuccessData({
-        bookingCode: response.data.data.bookingCode,
+        bookingCode,
         day: format(dateObj, "EEEE d 'de' MMMM 'de' yyyy", { locale: es }),
         startTime: format(dateObj, "HH:mm"),
         endTime: format(end, "HH:mm"),
         actualDuration: formData.duration,
+        durationLabel: formatDurationOptionLabel(formData.duration),
         cleanStudentName: formData.studentName,
+        responsibleLabel: isAdult
+          ? "Alumno mayor de edad"
+          : formData.responsibleName,
+        responsibleRelationshipLabel,
         email: safeEmail,
         phone: formData.phone,
         subject: formData.subject,
         school: formData.school,
-        educationLevel: `${formData.educationLevel} · ${formData.yearGrade}`,
+        educationLevel: confirmationEducationLabel || formData.educationLevel,
         notifications: response.data.notifications || null,
         managementMethods,
       });
       setShowModal(true);
+      speakAlert(
+        `Reserva confirmada. Gracias por confiar en este espacio. Tu turno quedó agendado para ${format(
+          dateObj,
+          "EEEE d 'de' MMMM",
+          { locale: es },
+        )} a las ${format(dateObj, "HH:mm")} horas. Guardá el código ${spellCodeForVoice(
+          bookingCode,
+        )}. Te voy a esperar en Mis Turnos para cualquier cambio, con ese código, tu correo o tu número de teléfono.`,
+        STEP_VOICE_OPTIONS,
+      );
     } catch (error) {
       console.log("Error al reservar:", error);
       showToast(getBookingApiMessage(error, API_URL), "error");
@@ -684,19 +1087,29 @@ const BookingForm = () => {
 
   const copyBookingCode = async () => {
     if (!successData?.bookingCode) return;
+    primeVoicePlayback();
     try {
       await navigator.clipboard.writeText(successData.bookingCode);
-      showToast("Codigo copiado. Ya podes guardarlo o compartirlo.", "success");
+      showToast("Código copiado. Ya podés guardarlo o compartirlo.", "success", {
+        title: "Código listo",
+        detail: "Lo vas a usar después en Mis Turnos.",
+        speak: `Código ${spellCodeForVoice(successData.bookingCode)} copiado. Ya podés guardarlo con tranquilidad para gestionar el turno después.`,
+      });
     } catch {
       showToast(
-        "No pude copiarlo automaticamente. Seleccionalo manualmente.",
+        "No pude copiarlo automáticamente. Seleccionalo manualmente.",
         "warning",
+        {
+          title: "Copia manual",
+          speak:
+            "No pude copiar el código de forma automática. Podés seleccionarlo manualmente desde el comprobante.",
+        },
       );
     }
   };
 
   const whatsappConfirmText = successData
-    ? `Hola Prof. Agustin. Acabo de reservar un turno.\n\nAlumno: ${successData.cleanStudentName}\nFecha: ${successData.day}\nHorario: ${successData.startTime} a ${successData.endTime} hs (${successData.actualDuration} hs)\nCodigo: ${successData.bookingCode}\nGestion: despues voy a entrar en Mis Turnos con este codigo.\n\nGracias.`
+    ? `Hola Prof. Agustín. Acabo de reservar un turno.\n\nAlumno: ${successData.cleanStudentName}\nResponsable: ${successData.responsibleLabel}\nParentesco: ${successData.responsibleRelationshipLabel}\nFecha: ${successData.day}\nHorario: ${successData.startTime} a ${successData.endTime} hs (${successData.actualDuration} hs)\nCódigo: ${successData.bookingCode}\nGestión: después voy a entrar en Mis Turnos con este código.\n\nGracias.`
     : "";
   const toastMeta = {
     success: {
@@ -705,7 +1118,7 @@ const BookingForm = () => {
     },
     warning: {
       icon: <FaExclamationCircle />,
-      title: "Atencion",
+      title: "Atención",
     },
     error: {
       icon: <FaTimesCircle />,
@@ -713,9 +1126,58 @@ const BookingForm = () => {
     },
     info: {
       icon: <FaInfoCircle />,
-      title: "Acompanamiento",
+      title: "Acompañamiento",
     },
   }[toast.type || "info"];
+
+  const renderCalendarHeader =
+    (monthsCount = 1) =>
+    ({
+      date,
+      decreaseMonth,
+      increaseMonth,
+      prevMonthButtonDisabled,
+      nextMonthButtonDisabled,
+      customHeaderCount,
+    }) => {
+      const canGoPrev = customHeaderCount === 0;
+      const canGoNext = customHeaderCount === monthsCount - 1;
+
+      return (
+        <div
+          className={`booking-datepicker-header ${monthsCount > 1 ? "is-expanded" : ""}`}
+        >
+          <button
+            type="button"
+            className="booking-month-nav"
+            onClick={decreaseMonth}
+            disabled={prevMonthButtonDisabled || !canGoPrev}
+            aria-label="Mes anterior"
+          >
+            <FaChevronLeft />
+          </button>
+
+          <div className="booking-month-copy">
+            {monthsCount > 1 && (
+              <span className="booking-month-kicker">
+                {customHeaderCount === 0 ? "Mes actual" : "Mes siguiente"}
+              </span>
+            )}
+            <strong>{format(date, "MMMM yyyy", { locale: es })}</strong>
+          </div>
+
+          <button
+            type="button"
+            className="booking-month-nav"
+            onClick={increaseMonth}
+            disabled={nextMonthButtonDisabled || !canGoNext}
+            aria-label="Mes siguiente"
+          >
+            <FaChevronRight />
+          </button>
+        </div>
+      );
+    };
 
   return (
     <div className="booking-page-wrapper">
@@ -729,23 +1191,24 @@ const BookingForm = () => {
           {toastMeta.icon}
         </div>
         <div className="toast-copy">
-          <strong>{toastMeta.title}</strong>
+          <strong>{toast.title || toastMeta.title}</strong>
           <span>{toast.message}</span>
+          {toast.detail ? <small>{toast.detail}</small> : null}
         </div>
       </div>
 
       <div className="form-card-elevation" ref={formCardRef}>
         <div className="card-top-actions">
           <Link to="/portal" className="manage-booking-link">
-            <FaUserLock /> Acceso Alumnos
+            <FaTicketAlt /> Ver mis turnos
           </Link>
         </div>
 
         <div className="form-header-neuro">
-          <span className="form-supertitle">SISTEMA DE GESTION DE TURNOS</span>
-          <h2 className="form-main-title">Asegura tu Clase</h2>
+          <span className="form-supertitle">SISTEMA DE GESTIÓN DE TURNOS</span>
+          <h2 className="form-main-title">Asegurá tu clase</h2>
           <p className="form-subtitle">
-            Completa tus datos y elige el momento ideal para aprender.
+            Completá tus datos y elegí el momento ideal para aprender.
           </p>
           <div className="form-support-strip" aria-label="Beneficios del sistema de reserva">
             {BOOKING_SUPPORT_PILLS.map((pill, index) => {
@@ -803,42 +1266,107 @@ const BookingForm = () => {
           aria-valuemax={WIZARD_STEPS.length}
           aria-valuenow={currentStep}
         >
-          <div className="stepper-progress-bar">
-            <div
-              className="stepper-progress-fill"
-              style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
-            ></div>
-          </div>
-          {WIZARD_STEPS.map((step) => (
-            <button
-              type="button"
-              key={step.id}
-              className="stepper-item"
-              onClick={() => handleStepClick(step.id)}
-              aria-current={currentStep === step.id ? "step" : undefined}
-              aria-label={`Ir a ${step.label}`}
-            >
-              <div
-                className={`step-circle ${currentStep > step.id ? "completed" : ""} ${currentStep === step.id ? "current" : ""}`}
-              >
-                {currentStep > step.id ? (
-                  <FaCheckCircle className="check-icon" />
-                ) : (
-                  step.id
-                )}
+          <div className="stepper-head">
+            <div className="stepper-head-copy">
+              <span className="stepper-kicker">Recorrido guiado</span>
+              <div className="stepper-context-row">
+                <strong className="stepper-head-title">{currentStepInfo?.label}</strong>
+                <span className="stepper-current-pill">
+                  {currentStep} / {WIZARD_STEPS.length}
+                </span>
               </div>
-              <span
-                className={`step-label ${currentStep >= step.id ? "active-label" : ""}`}
-              >
-                {step.label}
-              </span>
-            </button>
-          ))}
+              <p>{stepperFlowCopy}</p>
+            </div>
+            <p className="stepper-nav-hint">{stepperInteractionCopy}</p>
+          </div>
+
+          <div className="stepper-progress-rail" aria-hidden="true">
+            <div className="stepper-progress-bar">
+              <div
+                className="stepper-progress-fill"
+                style={{ width: `${stepProgressWidth}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <div className="stepper-grid">
+            {WIZARD_STEPS.map((step) => {
+              const isCompleted = currentStep > step.id;
+              const isCurrent = currentStep === step.id;
+              const isUpcoming = step.id === currentStep + 1;
+              const stepState = isCompleted
+                ? "completed"
+                : isCurrent
+                  ? "current"
+                  : isUpcoming
+                    ? "upcoming"
+                    : "locked";
+              const stepStatusLabel = isCompleted
+                ? "Listo"
+                : isCurrent
+                  ? "Ahora"
+                  : isUpcoming
+                    ? "Sigue"
+                    : "Después";
+              const stepHint = isCompleted
+                  ? "Tocá para volver"
+                  : isCurrent
+                    ? "Estás aquí"
+                    : isUpcoming
+                      ? "Se habilita al completar este paso"
+                      : "Aún bloqueado";
+
+              return (
+                <button
+                  type="button"
+                  key={step.id}
+                  className={`stepper-item is-${stepState} ${isCompleted ? "is-clickable" : ""}`}
+                  onClick={() => handleStepClick(step.id)}
+                  aria-current={isCurrent ? "step" : undefined}
+                  aria-label={
+                    isCompleted
+                      ? `Volver a ${step.label}`
+                      : isCurrent
+                        ? `${step.label} es el paso actual`
+                        : `${step.label} se habilita más adelante`
+                  }
+                  disabled={step.id > currentStep}
+                >
+                  <span className="step-node">
+                    <span
+                      className={`step-circle ${isCompleted ? "completed" : ""} ${isCurrent ? "current" : ""}`}
+                    >
+                      {isCompleted ? (
+                        <FaCheckCircle className="check-icon" />
+                      ) : (
+                        step.id
+                      )}
+                    </span>
+                  </span>
+
+                  <span className="step-card">
+                    <span className="step-card-meta">
+                      <span className={`step-status-pill is-${stepState}`}>
+                        {stepStatusLabel}
+                      </span>
+                      <span className="step-action-hint">{stepHint}</span>
+                    </span>
+                    <span
+                      className={`step-label ${currentStep >= step.id ? "active-label" : ""}`}
+                    >
+                      {step.label}
+                    </span>
+                    <small className="step-caption">{step.title}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div
           ref={sliderWindowRef}
-          className="form-slider-window"
+          className={`form-slider-window ${slideDirection === "backward" ? "is-backward" : "is-forward"}`}
           style={{ height: sliderHeight ? `${sliderHeight}px` : "auto" }}
         >
           <div
@@ -856,7 +1384,7 @@ const BookingForm = () => {
             >
               <div className="form-section-block">
                 <h3 className="section-title" tabIndex={-1}>
-                  <FaIdCard /> Informacion Personal
+                  <FaIdCard /> Información personal
                 </h3>
                 <div className="form-grid-2">
                   <div className="neuro-input-group">
@@ -888,13 +1416,13 @@ const BookingForm = () => {
                       )}
                     </div>
                     <p id="studentName-help" className="field-helper">
-                      Escribilo como te gustaria verlo en el comprobante y en los avisos.
+                      Escribilo como te gustaría verlo en el comprobante y en los avisos.
                     </p>
                   </div>
                   <div className="neuro-input-group">
                     <div className="label-row">
                       <label>
-                        WhatsApp <span className="optional">(Sin 0 ni 15)</span>{" "}
+                        Número de teléfono <span className="optional">(Sin 0 ni 15)</span>{" "}
                         <span className="required">*</span>
                       </label>
                       {hasAttemptedNext && !isValidField("phone") && (
@@ -920,89 +1448,194 @@ const BookingForm = () => {
                       )}
                     </div>
                     <p id="phone-help" className="field-helper">
-                      Lo usamos para recordatorios, cambios y seguimiento rapido.
+                      Lo usamos para recordatorios, cambios y seguimiento rápido.
                     </p>
                   </div>
                 </div>
 
                 <div className="adult-mode-banner">
                   <div className="adult-mode-copy">
-                    <span className="adult-mode-kicker">Quien reserva</span>
-                    <strong>{isAdult ? "Estas reservando para vos" : "Estas reservando para un menor"}</strong>
+                    <span className="adult-mode-kicker">Quién reserva</span>
+                    <strong>{isAdult ? "Estás reservando para vos" : "Estás reservando para un menor"}</strong>
                     <small>
                       {isAdult
-                        ? "Mantenemos esta opcion siempre visible para que puedas cambiarla sin perderte."
+                        ? "Mantenemos esta opción siempre visible para que puedas cambiarla sin perderte."
                         : "Si el turno es para un menor, pedimos un adulto responsable para acompañar el contacto."}
                     </small>
                   </div>
                   <div className="neuro-toggle-animator adult-mode-toggle">
-                    <div
-                      className={`neuro-toggle-wrapper premium-input ${isAdult ? "active-box" : ""}`}
+                    <button
+                      type="button"
+                      className={`neuro-toggle-wrapper premium-input ${isAdult ? "active-box" : ""} ${adultModeLocked ? "is-disabled" : ""}`}
                       role="switch"
-                      tabIndex={0}
                       aria-checked={isAdult}
+                      aria-disabled={adultModeLocked}
                       aria-label="Indicar que el alumno es mayor de edad"
+                      aria-describedby="adult-mode-help"
+                      disabled={adultModeLocked}
                       onClick={toggleAdultMode}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          toggleAdultMode();
-                        }
-                      }}
                     >
                       <div className="toggle-text">
+                        <span className={`toggle-pill ${isAdult ? "active" : "inactive"}`}>
+                          {isAdult ? "Reserva directa" : "Con responsable"}
+                        </span>
                         <span className="toggle-title">Soy alumno mayor de edad</span>
-                        <span className="toggle-subtitle">No estoy reservando para un menor</span>
+                        <span className="toggle-subtitle">
+                          {isAdult
+                            ? "Usaremos tus datos como contacto principal y podés cambiarlo cuando quieras."
+                            : "Si el turno es para un menor, te pedimos un adulto responsable para acompañar el contacto."}
+                        </span>
                       </div>
-                      <div className={`neuro-toggle ${isAdult ? "active" : ""}`}></div>
-                    </div>
+                      <div className="toggle-control-shell" aria-hidden="true">
+                        <span
+                          className={`toggle-state-label ${
+                            adultModeLocked ? "locked" : isAdult ? "active" : ""
+                          }`}
+                        >
+                          {adultModeLocked
+                            ? "Bloqueado"
+                            : isAdult
+                              ? "Modo activo"
+                              : "Activar"}
+                        </span>
+                        <div className={`neuro-toggle ${isAdult ? "active" : ""}`}></div>
+                      </div>
+                    </button>
+                    <p id="adult-mode-help" className={`adult-mode-helper ${adultModeLocked ? "locked" : ""}`}>
+                      {adultModeLocked
+                        ? "Para volver a modo adulto, primero limpia los datos del adulto responsable."
+                        : "Podés cambiar esta opción cuando quieras antes de avanzar."}
+                    </p>
                   </div>
                 </div>
 
                 <div className={`form-flex-adult ${isAdult ? "adult-self-mode" : ""}`}>
                   {!isAdult ? (
-                    <div className="adult-field-container">
-                      <div className="neuro-input-group">
-                        <div className="label-row">
-                          <label>
-                            Adulto Responsable <span className="required">*</span>
-                          </label>
-                          {hasAttemptedNext &&
-                            !isValidField("responsibleName") && (
-                              <span className="error-text">Requerido</span>
+                    <>
+                      <div className="adult-field-container">
+                        <div className="neuro-input-group">
+                          <div className="label-row">
+                            <label>
+                              Adulto responsable <span className="required">*</span>
+                            </label>
+                            {hasAttemptedNext &&
+                              !isValidField("responsibleName") && (
+                                <span className="error-text">Requerido</span>
+                              )}
+                          </div>
+                          <div
+                            className={`neuro-input-wrapper premium-input ${getFieldStateClass("responsibleName")}`}
+                          >
+                            <FaUserCheck className="input-icon" />
+                            <input
+                              type="text"
+                              name="responsibleName"
+                              value={formData.responsibleName}
+                              onChange={handleChange}
+                              aria-invalid={
+                                hasAttemptedNext &&
+                                !isValidField("responsibleName")
+                              }
+                              aria-describedby="responsibleName-help"
+                              placeholder="Nombre del adulto responsable"
+                            />
+                            {isValidField("responsibleName") && (
+                              <FaCheckCircle className="valid-icon" />
                             )}
+                          </div>
+                          <p id="responsibleName-help" className="field-helper">
+                            Puede ser madre, padre, abuelo, abuela o quien acompaña el proceso.
+                          </p>
                         </div>
-                        <div
-                          className={`neuro-input-wrapper premium-input ${getFieldStateClass("responsibleName")}`}
-                        >
-                          <FaUserCheck className="input-icon" />
-                          <input
-                            type="text"
-                            name="responsibleName"
-                            value={formData.responsibleName}
-                            onChange={handleChange}
-                            aria-invalid={
-                              hasAttemptedNext &&
-                              !isValidField("responsibleName")
-                            }
-                            aria-describedby="responsibleName-help"
-                            placeholder="Nombre del adulto responsable"
-                          />
-                          {isValidField("responsibleName") && (
-                            <FaCheckCircle className="valid-icon" />
-                          )}
-                        </div>
-                        <p id="responsibleName-help" className="field-helper">
-                          Puede ser madre, padre, abuelo, abuela o quien acompane el proceso.
-                        </p>
                       </div>
-                    </div>
+
+                      <div className="adult-field-container">
+                        <div className="neuro-input-group">
+                          <div className="label-row">
+                            <label>
+                              Relación de parentesco <span className="required">*</span>
+                            </label>
+                            {hasAttemptedNext &&
+                              !isValidField("responsibleRelationship") && (
+                                <span className="error-text">Requerido</span>
+                              )}
+                          </div>
+                          <div
+                            className={`neuro-input-wrapper premium-input select-input-wrapper ${getFieldStateClass("responsibleRelationship")}`}
+                          >
+                            <FaIdCard className="input-icon" />
+                            <select
+                              name="responsibleRelationship"
+                              value={formData.responsibleRelationship}
+                              onChange={handleChange}
+                              aria-invalid={
+                                hasAttemptedNext &&
+                                !isValidField("responsibleRelationship")
+                              }
+                              aria-describedby="responsibleRelationship-help"
+                            >
+                              <option value="">Seleccioná una opción</option>
+                              {RESPONSIBLE_RELATIONSHIP_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                            {isValidField("responsibleRelationship") && (
+                              <FaCheckCircle className="valid-icon" />
+                            )}
+                          </div>
+                          <p id="responsibleRelationship-help" className="field-helper">
+                            Así sabrán, vos y el profesor, qué vínculo tiene quien está gestionando el turno.
+                          </p>
+                        </div>
+                      </div>
+
+                      {formData.responsibleRelationship === RESPONSIBLE_RELATIONSHIP_OTHER_VALUE && (
+                        <div className="adult-field-container adult-field-container-full">
+                          <div className="neuro-input-group">
+                            <div className="label-row">
+                              <label>
+                                ¿Cuál es el vínculo? <span className="required">*</span>
+                              </label>
+                              {hasAttemptedNext &&
+                                !isValidField("responsibleRelationshipOther") && (
+                                  <span className="error-text">Requerido</span>
+                                )}
+                            </div>
+                            <div
+                              className={`neuro-input-wrapper premium-input ${getFieldStateClass("responsibleRelationshipOther")}`}
+                            >
+                              <FaUserCheck className="input-icon" />
+                              <input
+                                type="text"
+                                name="responsibleRelationshipOther"
+                                value={formData.responsibleRelationshipOther}
+                                onChange={handleChange}
+                                aria-invalid={
+                                  hasAttemptedNext &&
+                                  !isValidField("responsibleRelationshipOther")
+                                }
+                                aria-describedby="responsibleRelationshipOther-help"
+                                placeholder="Ej.: Tutor legal, madrina, referente familiar"
+                              />
+                              {isValidField("responsibleRelationshipOther") && (
+                                <FaCheckCircle className="valid-icon" />
+                              )}
+                            </div>
+                            <p id="responsibleRelationshipOther-help" className="field-helper">
+                              Escribilo tal como querés que figure en el resumen, en el mail y en el panel del profesor.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="adult-state-card" role="status" aria-live="polite">
                       <FaUserCheck />
                       <div>
                         <strong>Reserva directa</strong>
-                        <span>No hace falta completar un adulto responsable.</span>
+                        <span>No hace falta completar un adulto responsable ni su parentesco.</span>
                       </div>
                     </div>
                   )}
@@ -1011,12 +1644,12 @@ const BookingForm = () => {
                     <div className="neuro-input-group" style={{ marginTop: "0" }}>
                       <div className="label-row">
                         <label>
-                          {isAdult ? "Email" : "Email de Contacto"} <span className="optional">(Opcional)</span>
+                          {isAdult ? "Email" : "Email de contacto"} <span className="optional">(Opcional)</span>
                         </label>
                         {hasAttemptedNext &&
                           formData.email.trim() !== "" &&
                           !isValidField("email") && (
-                            <span className="error-text">Invalido</span>
+                            <span className="error-text">Inválido</span>
                           )}
                       </div>
                       <div
@@ -1042,8 +1675,8 @@ const BookingForm = () => {
                       </div>
                       <p id="email-help" className="field-helper">
                         {isAdult
-                          ? "Si lo completas, tambien te envio el codigo y el resumen por correo."
-                          : "Si lo dejas, el adulto responsable tambien recibe respaldo por correo."}
+                          ? "Si lo completás, también te envío el código y el resumen por correo."
+                          : "Si lo dejás, el adulto responsable también recibe respaldo por correo."}
                       </p>
                     </div>
                   </div>
@@ -1056,7 +1689,7 @@ const BookingForm = () => {
                 <div className="progressive-inner">
                   <hr className="section-divider-soft" />
                   <h3 className="section-title" tabIndex={-1}>
-                    <FaGraduationCap /> Perfil Academico
+                    <FaGraduationCap /> Perfil académico
                   </h3>
                   <div className="form-grid-2">
                     <div className="neuro-input-group">
@@ -1081,11 +1714,11 @@ const BookingForm = () => {
                             hasAttemptedNext && !isValidField("educationLevel")
                           }
                         >
-                          <option value="">Elegi el nivel educativo</option>
+                          <option value="">Elegí el nivel educativo</option>
                           <option value="Primaria">Primaria</option>
                           <option value="Secundaria">Secundaria</option>
                           <option value="Secundaria Tecnica">
-                            Secundaria Tecnica
+                            Secundaria técnica
                           </option>
                           <option value="Terciario">Terciario / Superior</option>
                           <option value="Universitario">Universitario</option>
@@ -1098,7 +1731,7 @@ const BookingForm = () => {
                     <div className="neuro-input-group">
                       <div className="label-row">
                         <label>
-                          Ano / Grado <span className="required">*</span>
+                          Año / grado <span className="required">*</span>
                         </label>
                         {hasAttemptedNext && !isValidField("yearGrade") && (
                           <span className="error-text">Requerido</span>
@@ -1118,10 +1751,10 @@ const BookingForm = () => {
                           }
                         >
                           {!formData.educationLevel && (
-                            <option value="">Elegi el nivel primero</option>
+                            <option value="">Elegí el nivel primero</option>
                           )}
                           {formData.educationLevel && (
-                            <option value="">Elegi curso, ano o grado</option>
+                            <option value="">Elegí curso, año o grado</option>
                           )}
                           {getYearGradeOptions().map((opt) => (
                             <option key={opt} value={opt}>
@@ -1167,7 +1800,7 @@ const BookingForm = () => {
                     <div className="neuro-input-group">
                       <div className="label-row">
                         <label>
-                          Institucion / Colegio <span className="required">*</span>
+                          Institución / colegio <span className="required">*</span>
                         </label>
                         {hasAttemptedNext && !isValidField("school") && (
                           <span className="error-text">Requerido</span>
@@ -1185,7 +1818,7 @@ const BookingForm = () => {
                           aria-invalid={
                             hasAttemptedNext && !isValidField("school")
                           }
-                          placeholder="Escuela, facultad o institucion"
+                          placeholder="Escuela, facultad o institución"
                         />
                         {isValidField("school") && (
                           <FaCheckCircle className="valid-icon" />
@@ -1206,7 +1839,7 @@ const BookingForm = () => {
                   >
                     <div className="label-row">
                       <label>
-                        Situacion / Comentarios{" "}
+                        Situación / comentarios{" "}
                         <span className="optional">
                           (Opcional pero recomendado)
                         </span>
@@ -1222,7 +1855,7 @@ const BookingForm = () => {
                         onChange={handleChange}
                         placeholder={
                           !isAdult
-                            ? "Ej: Necesita reforzar base, practicar ejercicios y llegar con mas seguridad al examen."
+                            ? "Ej: Necesita reforzar base, practicar ejercicios y llegar con más seguridad al examen."
                             : "Ej: Quiero ordenar temas, practicar ejercicios y llegar mejor preparado al parcial."
                         }
                         lang="es"
@@ -1258,155 +1891,220 @@ const BookingForm = () => {
               }}
               className={`form-slide-panel ${currentStep === 2 ? "active-panel" : ""}`}
             >
-              <div className="step-content-with-arrows">
-                <div className="side-nav-group left">
-                  <button
-                    type="button"
-                    className="side-nav-arrow"
-                    aria-label="Volver al paso anterior: Tus Datos"
-                    onClick={goToPrev}
-                  >
-                    <FaChevronLeft />
-                  </button>
-                  <span className="side-nav-label">
-                    Ir al paso
-                    <br />
-                    anterior
-                  </span>
-                </div>
-
+              <div className="step-content-with-arrows step-content-focus">
                 <div className="calendar-focus-container relative-interaction">
-                  <h3 className="section-title center-text" tabIndex={-1}>
-                    <FaCalendarAlt /> Elige un Dia
-                  </h3>
-                  <p className="step-empathy-note">
-                    Si estas organizando a un menor, elegi un dia que tambien le
-                    de margen para descansar y llegar tranquilo.
-                  </p>
+                  <div className="step-stage-shell calendar-stage-shell">
+                    <div className="step-stage-main">
+                      <div className="step-stage-heading">
+                        <div>
+                          <span className="step-stage-kicker">Paso 2 · Fecha</span>
+                          <h3 className="section-title" tabIndex={-1}>
+                            <FaCalendarAlt /> Elegí un día
+                          </h3>
+                          <p className="step-empathy-note">
+                            Si estás organizando a un menor, elegí un día que
+                            también le dé margen para descansar y llegar
+                            tranquilo.
+                          </p>
+                        </div>
 
-                  <div className="calendar-legend">
-                    <div className="legend-item">
-                      <span className="legend-icon disabled"></span> Ocupado
-                    </div>
-                    <div className="legend-item">
-                      <span className="legend-icon today"></span> Hoy
-                    </div>
-                    <div className="legend-item">
-                      <span className="legend-icon available"></span> Disponible
-                    </div>
-                    <div className="legend-item">
-                      <span className="legend-icon selected"></span>{" "}
-                      Seleccionado
-                    </div>
-                  </div>
+                        {isDesktopCalendarViewport && (
+                          <button
+                            type="button"
+                            className="calendar-zoom-button"
+                            onClick={openCalendarExpanded}
+                            aria-haspopup="dialog"
+                            aria-expanded={isCalendarExpanded}
+                          >
+                            <FaSearchPlus /> Ampliar calendario
+                          </button>
+                        )}
+                      </div>
 
-                  <div
-                    className={`minimal-chip-wrapper ${formData.timeSlot ? "visible" : ""}`}
-                  >
-                    <div className="minimal-chip">
-                      <FaCalendarCheck className="chip-icon" />
-                      <span>
-                        {formData.timeSlot
-                          ? format(
-                              formData.timeSlot,
-                              "EEEE d 'de' MMMM, yyyy",
-                              { locale: es },
-                            )
-                          : ""}
-                      </span>
+                      <div className="calendar-toolbar-row">
+                        <div className="calendar-legend">
+                          <div className="legend-item">
+                            <span className="legend-icon disabled"></span>{" "}
+                            Ocupado
+                          </div>
+                          <div className="legend-item">
+                            <span className="legend-icon today"></span> Hoy
+                          </div>
+                          <div className="legend-item">
+                            <span className="legend-icon available"></span>{" "}
+                            Disponible
+                          </div>
+                          <div className="legend-item">
+                            <span className="legend-icon selected"></span>{" "}
+                            Seleccionado
+                          </div>
+                        </div>
+
+                        <span className="calendar-toolbar-helper">
+                          {selectedDayOnly
+                            ? "Fecha lista. El siguiente paso ya está preparado."
+                            : "Tocá un día para habilitar los horarios disponibles."}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`calendar-selection-banner ${selectedDayOnly ? "is-active" : ""}`}
+                        role="status"
+                        aria-live="polite"
+                      >
+                        <div>
+                          <span className="calendar-selection-kicker">
+                            Selección actual
+                          </span>
+                          <strong>
+                            {selectedDayOnly
+                              ? selectedDayLabel
+                              : "Todavía no elegiste una fecha"}
+                          </strong>
+                          <p>
+                            {selectedDayOnly
+                                ? "Si la cambiás, los horarios del paso siguiente se actualizan solos."
+                                : "En pantallas grandes podés abrir la vista ampliada para verla mucho más cómoda."}
+                          </p>
+                        </div>
+
+                        {selectedDayOnly ? (
+                          <button
+                            type="button"
+                            className="btn-chip-clear"
+                            onClick={clearDateSelection}
+                            title="Quitar fecha"
+                            aria-label="Quitar fecha elegida"
+                          >
+                            <FaTimes /> Quitar selección
+                          </button>
+                        ) : (
+                          <span className="calendar-selection-tip">
+                            Paso siguiente: horarios. Si volvés a tocar la fecha elegida, la quitás.
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="calendar-glass-box calendar-rich-box">
+                        <DatePicker
+                          selected={formData.timeSlot}
+                          onChange={() => {}}
+                          onSelect={handleDateSelect}
+                          minDate={new Date()}
+                          inline
+                          locale="es"
+                          fixedHeight
+                          calendarClassName="neuro-calendar neuro-calendar-rich"
+                          dayClassName={getDayClassName}
+                          renderCustomHeader={renderCalendarHeader(1)}
+                        />
+                      </div>
+                    </div>
+
+                    <aside className="step-stage-sidebar">
+                      <div className="stage-sidebar-cards">
+                        <article className="selection-insight-card">
+                          <div className="selection-insight-head">
+                            <span className="selection-insight-icon">
+                              <FaCalendarCheck />
+                            </span>
+                            <span className="insight-label">Día elegido</span>
+                          </div>
+                          <strong>
+                            {selectedDayOnly
+                              ? format(selectedDayOnly, "EEEE d 'de' MMMM", {
+                                  locale: es,
+                                })
+                              : "Todavía sin fecha"}
+                          </strong>
+                          <small>
+                            {selectedDayOnly
+                                ? "La reserva ya quedó enfocada en este día."
+                                : "Primero elegí el día y después te mostramos solo horarios libres."}
+                          </small>
+                        </article>
+
+                        <article className="selection-insight-card">
+                          <div className="selection-insight-head">
+                            <span className="selection-insight-icon">
+                              <FaClock />
+                            </span>
+                            <span className="insight-label">Horarios libres</span>
+                          </div>
+                          <strong>
+                            {selectedDayOnly
+                              ? `${availableSlotCount} opciones`
+                              : "--"}
+                          </strong>
+                          <small>
+                            {selectedDayOnly
+                              ? availableSlotCount > 0
+                                ? "Filtramos la agenda real para que no pierdas tiempo."
+                                : "Ese día ya no tiene espacios disponibles."
+                              : "Este contador aparece apenas confirmás una fecha."}
+                          </small>
+                        </article>
+
+                        <article className="selection-insight-card accent">
+                          <div className="selection-insight-head">
+                            <span className="selection-insight-icon">
+                              <FaLightbulb />
+                            </span>
+                            <span className="insight-label">
+                              Primer horario libre
+                            </span>
+                          </div>
+                          <strong>
+                            {nextFreeSlot
+                              ? `${format(nextFreeSlot, "HH:mm")} hs`
+                              : "--"}
+                          </strong>
+                          <small>
+                            {nextFreeSlot
+                              ? "Ideal si querés resolver rápido sin revisar toda la grilla."
+                              : "Cuando haya cupos te lo vamos a marcar acá."}
+                          </small>
+                        </article>
+                      </div>
+
                       <button
                         type="button"
-                        className="btn-chip-clear"
-                        onClick={clearDateSelection}
-                        title="Desmarcar"
-                        aria-label="Desmarcar fecha elegida"
+                        className={`btn-stage-next desktop-stage-cta ${selectedDayOnly ? "is-ready" : "is-locked"}`}
+                        onClick={handleProceedToTimeStep}
                       >
-                        <FaTimes /> Desmarcar
+                        <span>
+                          {selectedDayOnly
+                            ? "Ver horarios disponibles"
+                            : "Elegí un día para continuar"}
+                        </span>
+                        <FaArrowRight />
                       </button>
-                    </div>
-                  </div>
 
-                  <div className="selection-insight-panel">
-                    <article className="selection-insight-card">
-                      <span className="insight-label">Dia elegido</span>
-                      <strong>
+                      <p className="stage-next-helper">
                         {selectedDayOnly
-                          ? format(selectedDayOnly, "EEEE d 'de' MMMM", {
-                              locale: es,
-                            })
-                          : "Todavia sin fecha"}
-                      </strong>
-                      <small>
-                        {selectedDayOnly
-                          ? "Si cambias el dia, los horarios se actualizan solos."
-                          : "Primero elegi un dia y despues vemos los horarios libres."}
-                      </small>
-                    </article>
-
-                    <article className="selection-insight-card">
-                      <span className="insight-label">Horarios libres</span>
-                      <strong>
-                        {selectedDayOnly ? `${availableSlotCount} opciones` : "--"}
-                      </strong>
-                      <small>
-                        {selectedDayOnly
-                          ? availableSlotCount > 0
-                            ? "Mostramos solo bloques disponibles para evitar cruces."
-                            : "Ese dia ya no tiene espacios disponibles."
-                          : "Los bloques libres aparecen cuando confirmas una fecha."}
-                      </small>
-                    </article>
-
-                    <article className="selection-insight-card accent">
-                      <span className="insight-label">Primer horario libre</span>
-                      <strong>
-                        {nextFreeSlot ? `${format(nextFreeSlot, "HH:mm")} hs` : "--"}
-                      </strong>
-                      <small>
-                        {nextFreeSlot
-                          ? "Ideal si queres resolver rapido sin revisar toda la grilla."
-                          : "Cuando haya cupos te lo vamos a marcar aca."}
-                      </small>
-                    </article>
-                  </div>
-
-                  <div className="calendar-glass-box">
-                    <DatePicker
-                      selected={formData.timeSlot}
-                      onChange={handleDateSelect}
-                      minDate={new Date()}
-                      inline
-                      locale="es"
-                      calendarClassName="neuro-calendar"
-                      dayClassName={getDayClassName}
-                    />
+                          ? "Te llevamos al paso 3 con la fecha ya enfocada."
+                          : "Cuando elijas una fecha, este botón se convierte en tu acceso directo al siguiente paso."}
+                      </p>
+                    </aside>
                   </div>
                 </div>
+              </div>
 
-                <div className="side-nav-group right">
-                  <button
-                    type="button"
-                    className={`side-nav-arrow ${formData.timeSlot ? "ready" : "locked"}`}
-                    aria-label="Avanzar al paso siguiente: Tu Horario"
-                    onClick={() => {
-                      if (!formData.timeSlot) {
-                        showToast(
-                          "Elige una fecha en el calendario para descubrir los horarios libres.",
-                          "warning",
-                        );
-                      } else {
-                        goToNext();
-                      }
-                    }}
-                  >
-                    <FaChevronRight />
-                  </button>
-                  <span className="side-nav-label">
-                    Ir al paso
-                    <br />
-                    siguiente
-                  </span>
-                </div>
+              <div className="step-actions stage-actions-mobile space-between">
+                <button
+                  type="button"
+                  className="btn-neuro-secondary"
+                  onClick={goToPrev}
+                >
+                  <FaArrowLeft /> Volver a tus datos
+                </button>
+                <button
+                  type="button"
+                  className={`btn-neuro-primary ${selectedDayOnly ? "btn-ready" : "btn-disabled"}`}
+                  onClick={handleProceedToTimeStep}
+                >
+                  Horarios disponibles <FaArrowRight />
+                </button>
               </div>
             </div>
 
@@ -1419,200 +2117,272 @@ const BookingForm = () => {
               }}
               className={`form-slide-panel ${currentStep === 3 ? "active-panel" : ""}`}
             >
-              <div className="step-content-with-arrows">
-                <div className="side-nav-group left">
-                  <button
-                    type="button"
-                    className="side-nav-arrow"
-                    aria-label="Volver al paso anterior: El Dia"
-                    onClick={goToPrev}
-                  >
-                    <FaChevronLeft />
-                  </button>
-                  <span className="side-nav-label">
-                    Ir al paso
-                    <br />
-                    anterior
-                  </span>
-                </div>
-
+              <div className="step-content-with-arrows step-content-focus">
                 <div className="calendar-focus-container relative-interaction">
-                  <h3 className="section-title center-text" tabIndex={-1}>
-                    <FaClock /> Turnos Disponibles
-                  </h3>
-                  <p className="step-empathy-note">
-                    Cada boton es un horario posible. Los horarios ocupados se
-                    muestran bloqueados para evitar confusiones.
-                  </p>
+                  <div className="step-stage-shell slot-stage-shell">
+                    <div className="step-stage-main">
+                      <div className="step-stage-heading">
+                        <div>
+                          <span className="step-stage-kicker">
+                            Paso 3 · Horario
+                          </span>
+                          <h3 className="section-title" tabIndex={-1}>
+                            <FaClock /> Turnos disponibles
+                          </h3>
+                          <p className="step-empathy-note">
+                            Cada botón es un horario posible. Los bloques
+                            ocupados o pasados quedan bloqueados para evitar
+                            confusiones.
+                          </p>
+                        </div>
 
-                  <div className="calendar-legend">
-                    <div className="legend-item">
-                      <span className="legend-icon disabled"></span> Ocupado
-                    </div>
-                    <div className="legend-item">
-                      <span className="legend-icon available"></span> Disponible
-                    </div>
-                    <div className="legend-item">
-                      <span className="legend-icon selected"></span>{" "}
-                      Seleccionado
-                    </div>
-                  </div>
+                        <button
+                          type="button"
+                          className="calendar-secondary-action"
+                          onClick={goToPrev}
+                        >
+                          <FaCalendarAlt /> Cambiar fecha
+                        </button>
+                      </div>
 
-                  <div
-                    className={`minimal-chip-wrapper ${formData.timeSlot && formData.timeSlot.getHours() !== 0 ? "visible" : ""}`}
-                  >
-                    <div className="minimal-chip">
-                      <FaClock className="chip-icon" />
-                      <span>
-                        {formData.timeSlot && formData.timeSlot.getHours() !== 0
-                          ? format(formData.timeSlot, "HH:mm")
-                          : ""}{" "}
-                        hs
-                      </span>
+                      <div className="calendar-toolbar-row">
+                        <div className="calendar-legend">
+                          <div className="legend-item">
+                            <span className="legend-icon disabled"></span>{" "}
+                            Ocupado
+                          </div>
+                          <div className="legend-item">
+                            <span className="legend-icon available"></span>{" "}
+                            Disponible
+                          </div>
+                          <div className="legend-item">
+                            <span className="legend-icon selected"></span>{" "}
+                            Seleccionado
+                          </div>
+                        </div>
+
+                        <span className="calendar-toolbar-helper">
+                          {isTimeSelected
+                            ? "Horario listo. El siguiente paso es revisar y confirmar."
+                            : "Elegí una hora libre y te habilitamos la confirmación."}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`calendar-selection-banner ${isTimeSelected ? "is-active" : ""}`}
+                        role="status"
+                        aria-live="polite"
+                      >
+                        <div>
+                          <span className="calendar-selection-kicker">
+                            Horario elegido
+                          </span>
+                          <strong>
+                            {isTimeSelected
+                              ? `${selectedTimeLabel} · ${selectedDayLabel}`
+                              : "Todavía no elegiste un horario"}
+                          </strong>
+                          <p>
+                            {isTimeSelected
+                                ? "Ahora solo queda revisar duración, resumen y confirmar."
+                                : "Podés tocar cualquier bloque libre para marcarlo y seguir."}
+                          </p>
+                        </div>
+
+                        {isTimeSelected ? (
+                          <button
+                            type="button"
+                            className="btn-chip-clear"
+                            onClick={clearTimeSelection}
+                            title="Quitar horario"
+                            aria-label="Quitar horario elegido"
+                          >
+                            <FaTimes /> Quitar selección
+                          </button>
+                        ) : (
+                          <span className="calendar-selection-tip">
+                            Paso siguiente: confirmar. Si volvés a tocar el bloque elegido, lo quitás.
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="calendar-glass-box panoramic slot-rich-box">
+                        <div className="slots-container">
+                          {availableSlots.length > 0 ? (
+                            <div className="slot-sections">
+                              {slotSections.map((section) => (
+                                <section key={section.id} className="slot-section">
+                                  <div className="slot-section-header">
+                                    <div>
+                                      <h4>{section.label}</h4>
+                                      <p>{section.helper}</p>
+                                    </div>
+                                    <span>
+                                      {
+                                        section.slots.filter(
+                                          (slot) => !slot.isOccupied,
+                                        ).length
+                                      }{" "}
+                                      libres
+                                    </span>
+                                  </div>
+
+                                  <div className="slots-grid">
+                                    {section.slots.map((slot, index) => {
+                                      const isSelected =
+                                        formData.timeSlot?.getTime() ===
+                                        slot.timeObj.getTime();
+                                      const slotStateLabel = slot.isOccupied
+                                        ? slot.status === "past"
+                                          ? "No disponible"
+                                          : "Ocupado"
+                                        : isSelected
+                                          ? "Elegido"
+                                          : "Libre";
+
+                                      return (
+                                        <button
+                                          key={`${section.id}-${index}`}
+                                          type="button"
+                                          disabled={slot.isOccupied}
+                                          className={`slot-btn ${slot.isOccupied ? "disabled" : ""} ${isSelected ? "selected" : ""}`}
+                                          onClick={() =>
+                                            handleTimeSelect(slot.timeObj)
+                                          }
+                                          aria-pressed={isSelected}
+                                          aria-label={`${format(slot.timeObj, "HH:mm")} ${slotStateLabel}`}
+                                        >
+                                          <span className="slot-main-label">
+                                            {format(slot.timeObj, "HH:mm")}
+                                          </span>
+                                          <span className="slot-sub-label">
+                                            {slotStateLabel}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </section>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="no-slots-box">
+                              <FaTimesCircle />
+                              <p>Cargando agenda...</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <aside className="step-stage-sidebar">
+                      <div className="stage-sidebar-cards">
+                        <article className="selection-insight-card">
+                          <div className="selection-insight-head">
+                            <span className="selection-insight-icon">
+                              <FaCalendarCheck />
+                            </span>
+                            <span className="insight-label">Día en foco</span>
+                          </div>
+                          <strong>
+                            {selectedDayOnly
+                              ? format(selectedDayOnly, "EEEE d 'de' MMMM", {
+                                  locale: es,
+                                })
+                              : "Sin fecha"}
+                          </strong>
+                          <small>
+                            {selectedDayOnly
+                                ? "Si necesitás otro día, podés volver sin perder tus datos."
+                                : "Vuelve al paso anterior para elegir la fecha."}
+                          </small>
+                        </article>
+
+                        <article className="selection-insight-card">
+                          <div className="selection-insight-head">
+                            <span className="selection-insight-icon">
+                              <FaClock />
+                            </span>
+                            <span className="insight-label">
+                              Estado del horario
+                            </span>
+                          </div>
+                          <strong>
+                            {isTimeSelected
+                              ? selectedTimeLabel
+                              : nextFreeSlot
+                                ? `${format(nextFreeSlot, "HH:mm")} hs`
+                                : "--"}
+                          </strong>
+                          <small>
+                            {isTimeSelected
+                              ? "Ya puedes pasar al resumen final."
+                              : nextFreeSlot
+                                ? "Te sugerimos empezar por el primer hueco libre."
+                                : "Si este día no sirve, volvés y elegís otra fecha."}
+                          </small>
+                        </article>
+
+                        <article className="selection-insight-card accent">
+                          <div className="selection-insight-head">
+                            <span className="selection-insight-icon">
+                              <FaLightbulb />
+                            </span>
+                            <span className="insight-label">
+                              Próximo paso
+                            </span>
+                          </div>
+                          <strong>
+                            {isTimeSelected
+                              ? "Revisar y confirmar"
+                              : `${availableSlotCount} bloques libres`}
+                          </strong>
+                          <small>
+                            {isTimeSelected
+                                ? "En la última pantalla ajustás duración y revisás el resumen."
+                                : "Apenas elijas un horario libre, te habilitamos la confirmación."}
+                          </small>
+                        </article>
+                      </div>
+
                       <button
                         type="button"
-                        className="btn-chip-clear"
-                        onClick={clearTimeSelection}
-                        title="Desmarcar horario"
-                        aria-label="Desmarcar horario elegido"
+                        className={`btn-stage-next desktop-stage-cta ${isTimeSelected ? "is-ready" : "is-locked"}`}
+                        onClick={handleProceedToConfirmationStep}
                       >
-                        <FaTimes /> Desmarcar
+                        <span>
+                          {isTimeSelected
+                            ? "Continuar a confirmar"
+                            : "Elegí un horario para continuar"}
+                        </span>
+                        <FaArrowRight />
                       </button>
-                    </div>
-                  </div>
 
-                  <div className="selection-insight-panel slots-insight-panel">
-                    <article className="selection-insight-card">
-                      <span className="insight-label">Dia en foco</span>
-                      <strong>
-                        {selectedDayOnly
-                          ? format(selectedDayOnly, "EEEE d 'de' MMMM", {
-                              locale: es,
-                            })
-                          : "Sin fecha"}
-                      </strong>
-                      <small>
-                        {selectedDayOnly
-                          ? "Asi ordenas mejor tu semana antes de confirmar."
-                          : "Volve al paso anterior para elegir la fecha."}
-                      </small>
-                    </article>
-
-                    <article className="selection-insight-card">
-                      <span className="insight-label">Disponibilidad real</span>
-                      <strong>{availableSlotCount} bloques libres</strong>
-                      <small>
-                        {availableSlotCount > 0
-                          ? "Los horarios bloqueados ya estan ocupados o pasaron."
-                          : "No quedan bloques libres para este dia."}
-                      </small>
-                    </article>
-
-                    <article className="selection-insight-card accent">
-                      <span className="insight-label">Siguiente sugerencia</span>
-                      <strong>
-                        {nextFreeSlot ? `${format(nextFreeSlot, "HH:mm")} hs` : "--"}
-                      </strong>
-                      <small>
-                        {nextFreeSlot
-                          ? "Empezar por el primer hueco libre suele ser lo mas rapido."
-                          : "Si este dia no sirve, podes volver y elegir otro."}
-                      </small>
-                    </article>
-                  </div>
-
-                  <div className="calendar-glass-box panoramic">
-                    <div className="slots-container">
-                      {availableSlots.length > 0 ? (
-                        <div className="slot-sections">
-                          {slotSections.map((section) => (
-                            <section key={section.id} className="slot-section">
-                              <div className="slot-section-header">
-                                <div>
-                                  <h4>{section.label}</h4>
-                                  <p>{section.helper}</p>
-                                </div>
-                                <span>
-                                  {
-                                    section.slots.filter((slot) => !slot.isOccupied)
-                                      .length
-                                  }{" "}
-                                  libres
-                                </span>
-                              </div>
-
-                              <div className="slots-grid">
-                                {section.slots.map((slot, index) => {
-                                  const isSelected =
-                                    formData.timeSlot?.getTime() ===
-                                    slot.timeObj.getTime();
-                                  const slotStateLabel = slot.isOccupied
-                                    ? slot.status === "past"
-                                      ? "No disponible"
-                                      : "Ocupado"
-                                    : isSelected
-                                      ? "Elegido"
-                                      : "Libre";
-
-                                  return (
-                                    <button
-                                      key={`${section.id}-${index}`}
-                                      type="button"
-                                      disabled={slot.isOccupied}
-                                      className={`slot-btn ${slot.isOccupied ? "disabled" : ""} ${isSelected ? "selected" : ""}`}
-                                      onClick={() => handleTimeSelect(slot.timeObj)}
-                                      aria-label={`${format(slot.timeObj, "HH:mm")} ${slotStateLabel}`}
-                                    >
-                                      <span className="slot-main-label">
-                                        {format(slot.timeObj, "HH:mm")}
-                                      </span>
-                                      <span className="slot-sub-label">
-                                        {slotStateLabel}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </section>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="no-slots-box">
-                          <FaTimesCircle />
-                          <p>Cargando agenda...</p>
-                        </div>
-                      )}
-                    </div>
+                      <p className="stage-next-helper">
+                        {isTimeSelected
+                          ? "El botón ya quedó listo para llevarte al resumen final."
+                          : "Cuando marques un horario libre, este botón se activa y te lleva al cierre de la reserva."}
+                      </p>
+                    </aside>
                   </div>
                 </div>
+              </div>
 
-                <div className="side-nav-group right">
-                  <button
-                    type="button"
-                    className={`side-nav-arrow ${formData.timeSlot && formData.timeSlot.getHours() !== 0 ? "ready" : "locked"}`}
-                    aria-label="Avanzar al paso siguiente: Confirmar"
-                    onClick={() => {
-                      if (
-                        !formData.timeSlot ||
-                        formData.timeSlot.getHours() === 0
-                      ) {
-                        showToast(
-                          "Selecciona el horario que mejor se adapte a vos para continuar.",
-                          "warning",
-                        );
-                      } else {
-                        goToNext();
-                      }
-                    }}
-                  >
-                    <FaChevronRight />
-                  </button>
-                  <span className="side-nav-label">
-                    Ir al paso
-                    <br />
-                    siguiente
-                  </span>
-                </div>
+              <div className="step-actions stage-actions-mobile space-between">
+                <button
+                  type="button"
+                  className="btn-neuro-secondary"
+                  onClick={goToPrev}
+                >
+                  <FaArrowLeft /> Cambiar fecha
+                </button>
+                <button
+                  type="button"
+                  className={`btn-neuro-primary ${isTimeSelected ? "btn-ready" : "btn-disabled"}`}
+                  onClick={handleProceedToConfirmationStep}
+                >
+                  Confirmar reserva <FaArrowRight />
+                </button>
               </div>
             </div>
 
@@ -1625,59 +2395,210 @@ const BookingForm = () => {
               }}
               className={`form-slide-panel ${currentStep === 4 ? "active-panel" : ""}`}
             >
-              <div className="calendar-focus-container">
-                <h3 className="section-title center-text" tabIndex={-1}>
-                  <FaCalendarCheck /> Confirmacion Final
-                </h3>
-                <p className="step-empathy-note">
-                  Revisa duracion, dia y horario. Si algo no coincide, volve al
-                  paso anterior antes de confirmar.
-                </p>
-
-                <div className="duration-selector">
-                  <label>Duracion de la clase</label>
-                  <div className="duration-option-grid" role="list" aria-label="Opciones de duracion">
-                    {durationOptions.map((duration) => {
-                      const isSelected = Number(formData.duration) === duration;
-                      return (
-                        <button
-                          key={duration}
-                          type="button"
-                          className={`duration-chip ${isSelected ? "selected" : ""}`}
-                          onClick={() => handleDurationSelect(duration)}
-                          aria-pressed={isSelected}
-                        >
-                          {formatDurationOptionLabel(duration)}
-                        </button>
-                      );
-                    })}
+              <div className="calendar-focus-container confirmation-stage">
+                <div className="confirmation-stage-intro">
+                  <div className="confirmation-stage-copy">
+                    <span className="confirmation-stage-eyebrow">
+                      Paso 4 de 4
+                    </span>
+                    <h3
+                      className="section-title center-text confirmation-stage-title"
+                      tabIndex={-1}
+                    >
+                      <FaCalendarCheck /> Confirmación final
+                    </h3>
+                    <p className="step-empathy-note confirmation-stage-note">
+                      Ya tenés fecha y horario. Solo queda elegir la duración
+                      ideal y revisar el resumen con todo bien claro antes de
+                      confirmar.
+                    </p>
                   </div>
-                  <p className="duration-current-selection">
-                    {formData.duration
-                      ? `Elegiste ${formatDurationOptionLabel(formData.duration)} para este turno.`
-                      : "Elige cuanto tiempo quieres reservar para continuar."}
-                  </p>
-                  <p className="duration-limit">
-                    Limite disponible para este turno: {formatDurationOptionLabel(maxAllowedDuration)}
-                  </p>
+
+                  <div
+                    className={`confirmation-stage-badge ${isConfirmationReady ? "is-ready" : ""}`}
+                  >
+                    <span>
+                      {isConfirmationReady ? "Todo listo" : "Último detalle"}
+                    </span>
+                    <strong>
+                      {isConfirmationReady
+                        ? "Reserva preparada para confirmar"
+                        : "Elegí cuánto durará la clase"}
+                    </strong>
+                  </div>
                 </div>
+
+                <section className="confirmation-hero-panel">
+                  <article className="confirmation-hero-main">
+                    <span className="confirmation-hero-kicker">
+                      Tu reserva en una mirada
+                    </span>
+                    <h4>{confirmationDateLabel || "Aún falta definir el turno"}</h4>
+                    <p>
+                      {confirmationTimeRangeLabel
+                        ? "Este es el horario que va a quedar guardado. Ajustá la duración y confirmás en un último paso, sin vueltas."
+                        : "Cuando elijas un horario, acá te dejamos el resumen principal para cerrarlo con tranquilidad."}
+                    </p>
+
+                    <div className="confirmation-hero-facts">
+                      <div className="confirmation-hero-fact">
+                        <FaClock />
+                        <div>
+                          <span>Horario</span>
+                          <strong>{confirmationTimeRangeLabel || "Pendiente"}</strong>
+                        </div>
+                      </div>
+
+                      <div className="confirmation-hero-fact">
+                        <FaHourglassHalf />
+                        <div>
+                          <span>Duración</span>
+                          <strong>
+                            {confirmationDurationLabel || "Aún sin elegir"}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div className="confirmation-hero-fact">
+                        <FaTicketAlt />
+                        <div>
+                          <span>Gestión</span>
+                          <strong>Código al confirmar</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+
+                  <aside className="confirmation-hero-side">
+                    <span className="confirmation-hero-side-kicker">
+                      Experiencia guiada
+                    </span>
+
+                    <div className="confirmation-hero-checks">
+                      <span className="confirmation-hero-check is-done">
+                        <FaCheckCircle /> Fecha elegida
+                      </span>
+                      <span
+                        className={`confirmation-hero-check ${isTimeSelected ? "is-done" : ""}`}
+                      >
+                        <FaCheckCircle /> Horario reservado
+                      </span>
+                      <span
+                        className={`confirmation-hero-check ${isConfirmationReady ? "is-done" : ""}`}
+                      >
+                        <FaShieldAlt /> Duración confirmada
+                      </span>
+                    </div>
+
+                    <p>
+                      {isConfirmationReady
+                        ? "Ya elegiste una opción compatible. Si todo te cierra, el botón final queda listo para confirmar."
+                        : `Te mostramos ${durationOptions.length} opciones compatibles con este horario para que elijas sin cruces ni confusiones.`}
+                    </p>
+                  </aside>
+                </section>
+
+                <section className="duration-selector duration-selector-premium">
+                  <div className="duration-selector-header">
+                    <div>
+                      <span className="duration-kicker">
+                        Duración de la clase
+                      </span>
+                      <h4>Elegí el tiempo ideal para este encuentro</h4>
+                      <p>
+                        Solo ves duraciones que entran dentro de ese horario,
+                        así todo queda prolijo, claro y sin superposiciones.
+                      </p>
+                    </div>
+
+                    <span className="duration-limit-badge">
+                      Hasta {formatDurationOptionLabel(maxAllowedDuration)}
+                    </span>
+                  </div>
+
+                  <div className="duration-selector-layout">
+                    <div
+                      className="duration-option-grid"
+                      role="list"
+                      aria-label="Opciones de duración"
+                    >
+                      {durationOptions.map((duration) => {
+                        const isSelected = Number(formData.duration) === duration;
+                        return (
+                          <button
+                            key={duration}
+                            type="button"
+                            className={`duration-chip ${isSelected ? "selected" : ""}`}
+                            onClick={() => handleDurationSelect(duration)}
+                            aria-pressed={isSelected}
+                          >
+                            {formatDurationOptionLabel(duration)}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <aside
+                      className={`duration-summary-card ${isConfirmationReady ? "is-ready" : ""}`}
+                    >
+                      <span className="duration-summary-kicker">
+                        {isConfirmationReady
+                          ? "Duración elegida"
+                          : "Tu siguiente paso"}
+                      </span>
+                      <strong>
+                        {isConfirmationReady
+                          ? confirmationDurationLabel
+                          : "Marcá una opción"}
+                      </strong>
+                      <p>
+                        {formData.duration
+                          ? `La clase quedará reservada por ${formatDurationOptionLabel(formData.duration)}.`
+                          : "Tocá una tarjeta para definir cuánto tiempo querés reservar."}
+                      </p>
+
+                      <div className="duration-summary-meta">
+                        <span>
+                          <FaShieldAlt /> Sin cruces
+                        </span>
+                        <span>
+                          <FaCalendarCheck /> Revisar y confirmar
+                        </span>
+                      </div>
+                    </aside>
+                  </div>
+
+                  <div className="duration-footer">
+                    <p className="duration-current-selection">
+                      {formData.duration
+                        ? `Elegiste ${formatDurationOptionLabel(formData.duration)} para este turno.`
+                          : "Elegí cuánto tiempo querés reservar para continuar."}
+                    </p>
+                    <p className="duration-limit">
+                      Límite disponible para este turno:{" "}
+                      {formatDurationOptionLabel(maxAllowedDuration)}
+                    </p>
+                  </div>
+                </section>
 
                 <BookingConfirmationSummary
                   dateLabel={confirmationDateLabel}
                   durationLabel={confirmationDurationLabel}
                   timeRangeLabel={confirmationTimeRangeLabel}
                   studentName={formData.studentName}
-                  educationLevel={formData.educationLevel}
+                  responsibleName={formData.responsibleName}
+                  responsibleRelationshipLabel={responsibleRelationshipLabel}
+                  isAdult={isAdult}
+                  educationLevel={confirmationEducationLabel}
                   subject={formData.subject}
                   school={formData.school}
+                  email={formData.email}
+                  phone={formData.phone}
                   lookupHint={confirmationLookupHint}
                 />
               </div>
 
-              <div
-                className="step-actions space-between"
-                style={{ marginTop: "2rem" }}
-              >
+              <div className="step-actions space-between confirmation-stage-actions">
                 <button
                   type="button"
                   className="btn-neuro-secondary"
@@ -1708,6 +2629,118 @@ const BookingForm = () => {
         onCopyCode={copyBookingCode}
         onClose={resetFormAfterSuccess}
       />
+
+      {isCalendarExpanded && (
+        <div
+          className="calendar-zoom-overlay"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeCalendarExpanded();
+            }
+          }}
+        >
+          <div
+            className="calendar-zoom-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="calendar-zoom-title"
+          >
+            <div className="calendar-zoom-header">
+              <div>
+                <span className="calendar-zoom-kicker">Vista ampliada</span>
+                <h3 id="calendar-zoom-title">
+                  Elegí tu fecha con más espacio
+                </h3>
+                <p>
+                  Mostramos una grilla más grande y enfocada en un solo mes
+                  para que la selecciones con comodidad sin perder armonía visual.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="calendar-zoom-close"
+                onClick={closeCalendarExpanded}
+              >
+                <FaTimes /> Cerrar
+              </button>
+            </div>
+
+            <div className="calendar-zoom-body">
+              <aside className="calendar-zoom-sidebar">
+                <article className="selection-insight-card accent">
+                  <div className="selection-insight-head">
+                    <span className="selection-insight-icon">
+                      <FaCalendarCheck />
+                    </span>
+                    <span className="insight-label">Fecha actual</span>
+                  </div>
+                  <strong>
+                    {selectedDayOnly ? selectedDayLabel : "Todavía sin fecha"}
+                  </strong>
+                  <small>
+                    {selectedDayOnly
+                      ? "Cuando toques otro día, cerramos esta vista y volvemos al flujo normal."
+                      : "Tocá un día y volvemos automáticamente a la reserva para seguir al paso siguiente."}
+                  </small>
+                </article>
+
+                <article className="selection-insight-card">
+                  <div className="selection-insight-head">
+                    <span className="selection-insight-icon">
+                      <FaClock />
+                    </span>
+                    <span className="insight-label">Horarios libres</span>
+                  </div>
+                  <strong>
+                    {selectedDayOnly ? `${availableSlotCount} opciones` : "--"}
+                  </strong>
+                  <small>
+                    {selectedDayOnly
+                      ? "La agenda del paso siguiente se recalcula apenas cerrás esta vista."
+                      : "Este contador aparece en cuanto confirmás una fecha."}
+                  </small>
+                </article>
+
+                <article className="selection-insight-card">
+                  <div className="selection-insight-head">
+                    <span className="selection-insight-icon">
+                      <FaLightbulb />
+                    </span>
+                    <span className="insight-label">Consejo</span>
+                  </div>
+                  <strong>
+                    {nextFreeSlot
+                      ? `Probá ${format(nextFreeSlot, "HH:mm")} hs`
+                      : "Mirá varios días"}
+                  </strong>
+                  <small>
+                    Si un día no te cierra, acá podés avanzar o volver de mes
+                    sin perder el contexto.
+                  </small>
+                </article>
+              </aside>
+
+              <div className="calendar-zoom-picker-shell">
+                <DatePicker
+                  selected={formData.timeSlot}
+                  onChange={() => {}}
+                  onSelect={handleDateSelect}
+                  minDate={new Date()}
+                  inline
+                  locale="es"
+                  fixedHeight
+                  monthsShown={1}
+                  calendarClassName="neuro-calendar neuro-calendar-rich neuro-calendar-expanded"
+                  dayClassName={getDayClassName}
+                  renderCustomHeader={renderCalendarHeader(1)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

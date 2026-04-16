@@ -1,0 +1,1179 @@
+/* ==========================================================================
+   Theme Polish v1.0
+   Capa final de consistencia visual para claro/oscuro en toda la experiencia.
+   ========================================================================== */
+
+:root {
+  --polish-surface-0: rgba(255, 255, 255, 0.98);
+  --polish-surface-1: rgba(248, 251, 253, 0.96);
+  --polish-surface-2: rgba(237, 243, 247, 0.92);
+  --polish-border-soft: rgba(32, 64, 96, 0.12);
+  --polish-border-strong: rgba(32, 64, 96, 0.18);
+  --polish-shadow-soft: 0 16px 36px rgba(19, 41, 64, 0.08);
+  --polish-shadow-card: 0 24px 56px rgba(19, 41, 64, 0.1);
+  --polish-accent-ring: rgba(88, 152, 96, 0.14);
+  --polish-info-wash: rgba(43, 84, 120, 0.08);
+}
+
+[data-theme="dark"] {
+  --polish-surface-0: rgba(10, 20, 33, 0.98);
+  --polish-surface-1: rgba(13, 26, 41, 0.96);
+  --polish-surface-2: rgba(17, 32, 50, 0.94);
+  --polish-border-soft: rgba(171, 195, 217, 0.14);
+  --polish-border-strong: rgba(171, 195, 217, 0.22);
+  --polish-shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.26);
+  --polish-shadow-card: 0 28px 62px rgba(0, 0, 0, 0.32);
+  --polish-accent-ring: rgba(114, 176, 122, 0.18);
+  --polish-info-wash: rgba(29, 52, 77, 0.26);
+}
+
+body {
+  background-color: var(--color-bg-light);
+}
+
+[data-theme="dark"] body {
+  background-color: var(--color-bg-light);
+}
+
+.nav-link-btn,
+.nav-utility-btn,
+.theme-toggle-btn,
+.menu-toggle-icon,
+.btn-search,
+.btn-action,
+.btn-modal,
+.btn-neuro-primary,
+.btn-neuro-secondary,
+.btn-neuro-success,
+.btn-stage-next,
+.duration-chip,
+.duration-quick-btn,
+.booking-month-nav,
+.calendar-zoom-button,
+.calendar-secondary-action,
+.calendar-zoom-close,
+.btn-chip-clear,
+.admin-primary-btn,
+.admin-secondary-btn,
+.admin-danger-btn,
+.admin-logout-btn,
+.admin-nav-btn,
+.status-filter-chip,
+.admin-whatsapp-btn,
+.icon-action,
+.inline-action,
+.inline-link-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
+.nav-link-btn:focus-visible,
+.nav-utility-btn:focus-visible,
+.theme-toggle-btn:focus-visible,
+.menu-toggle-icon:focus-visible,
+.btn-search:focus-visible,
+.btn-action:focus-visible,
+.btn-modal:focus-visible,
+.btn-neuro-primary:focus-visible,
+.btn-neuro-secondary:focus-visible,
+.btn-neuro-success:focus-visible,
+.btn-stage-next:focus-visible,
+.duration-chip:focus-visible,
+.duration-quick-btn:focus-visible,
+.booking-month-nav:focus-visible,
+.calendar-zoom-button:focus-visible,
+.calendar-secondary-action:focus-visible,
+.calendar-zoom-close:focus-visible,
+.btn-chip-clear:focus-visible,
+.admin-primary-btn:focus-visible,
+.admin-secondary-btn:focus-visible,
+.admin-danger-btn:focus-visible,
+.admin-logout-btn:focus-visible,
+.admin-nav-btn:focus-visible,
+.status-filter-chip:focus-visible,
+.admin-whatsapp-btn:focus-visible,
+.icon-action:focus-visible,
+.inline-action:focus-visible,
+.inline-link-btn:focus-visible {
+  outline: 3px solid var(--polish-accent-ring);
+  outline-offset: 3px;
+}
+
+.navbar-elite {
+  box-shadow: 0 10px 34px rgba(19, 41, 64, 0.06);
+}
+
+[data-theme="dark"] .navbar-elite {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.nav-link-btn {
+  min-height: 46px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.nav-link-btn.active {
+  box-shadow:
+    inset 0 0 0 1px rgba(88, 152, 96, 0.24),
+    0 10px 22px rgba(19, 41, 64, 0.08);
+}
+
+[data-theme="dark"] .nav-link-btn.active {
+  box-shadow:
+    inset 0 0 0 1px rgba(114, 176, 122, 0.32),
+    0 14px 28px rgba(0, 0, 0, 0.2);
+}
+
+.navbar-utility-cluster {
+  box-shadow: 0 14px 30px rgba(19, 41, 64, 0.08);
+}
+
+.booking-page-wrapper {
+  background-color: var(--color-bg-light);
+}
+
+[data-theme="dark"] .booking-page-wrapper {
+  background-color: var(--color-bg-light);
+}
+
+.form-card-elevation {
+  border-color: var(--border-soft);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+}
+
+[data-theme="dark"] .form-card-elevation {
+  border-color: var(--border-soft);
+  background: var(--color-white);
+}
+
+.premium-input,
+.adult-mode-copy,
+.adult-state-card,
+.selection-insight-card,
+.slot-stage-shell .slot-section,
+.calendar-selection-banner,
+.calendar-glass-box,
+.calendar-zoom-dialog,
+.calendar-zoom-header,
+.calendar-zoom-picker-shell,
+.duration-selector-premium,
+.duration-summary-card,
+.booking-summary-card-expanded,
+.summary-detail-card,
+.summary-management-mini-card,
+.success-summary-card,
+.success-management-pill,
+.success-management-card,
+.success-side-column,
+.success-modal-actions,
+.success-code-panel-prominent {
+  border-color: var(--border-soft);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+}
+
+[data-theme="dark"] .premium-input,
+[data-theme="dark"] .adult-mode-copy,
+[data-theme="dark"] .adult-state-card,
+[data-theme="dark"] .selection-insight-card,
+[data-theme="dark"] .slot-stage-shell .slot-section,
+[data-theme="dark"] .calendar-selection-banner,
+[data-theme="dark"] .calendar-glass-box,
+[data-theme="dark"] .calendar-zoom-dialog,
+[data-theme="dark"] .calendar-zoom-header,
+[data-theme="dark"] .calendar-zoom-picker-shell,
+[data-theme="dark"] .duration-selector-premium,
+[data-theme="dark"] .duration-summary-card,
+[data-theme="dark"] .booking-summary-card-expanded,
+[data-theme="dark"] .summary-detail-card,
+[data-theme="dark"] .summary-management-mini-card,
+[data-theme="dark"] .success-summary-card,
+[data-theme="dark"] .success-management-pill,
+[data-theme="dark"] .success-management-card,
+[data-theme="dark"] .success-side-column,
+[data-theme="dark"] .success-modal-actions,
+[data-theme="dark"] .success-code-panel-prominent {
+  background: var(--color-white);
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-card);
+}
+
+.stepper-nav-hint,
+.step-card,
+.step-status-pill {
+  box-shadow: var(--polish-shadow-soft);
+}
+
+.step-card {
+  min-height: 156px;
+  border-color: var(--border-soft);
+  background: var(--color-white);
+}
+
+.stepper-item.is-locked .step-card {
+  background: var(--color-surface-soft);
+}
+
+[data-theme="dark"] .stepper-nav-hint,
+[data-theme="dark"] .stepper-current-pill,
+[data-theme="dark"] .step-status-pill,
+[data-theme="dark"] .step-card {
+  background: var(--color-white);
+  border-color: var(--border-soft);
+}
+
+.step-action-hint {
+  min-height: 2.55em;
+}
+
+.stepper-item.is-locked .step-card {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.98));
+}
+
+[data-theme="dark"] .stepper-nav-hint,
+[data-theme="dark"] .stepper-current-pill,
+[data-theme="dark"] .step-status-pill,
+[data-theme="dark"] .step-card {
+  background: linear-gradient(180deg, rgba(13, 26, 41, 0.98), rgba(17, 32, 50, 0.95));
+  border-color: var(--polish-border-soft);
+}
+
+[data-theme="dark"] .stepper-head-copy p,
+[data-theme="dark"] .stepper-nav-hint,
+[data-theme="dark"] .step-action-hint,
+[data-theme="dark"] .step-caption {
+  color: #9fb2c4;
+}
+
+[data-theme="dark"] .step-label {
+  color: #bbccda;
+}
+
+[data-theme="dark"] .stepper-item.is-current .step-card {
+  background:
+    radial-gradient(circle at top right, rgba(171, 195, 217, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(15, 31, 49, 0.98), rgba(17, 32, 50, 0.96));
+  border-color: var(--polish-border-strong);
+}
+
+[data-theme="dark"] .stepper-item.is-completed .step-card {
+  background:
+    radial-gradient(circle at top right, rgba(114, 176, 122, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(15, 34, 28, 0.98), rgba(13, 26, 41, 0.96));
+  border-color: rgba(114, 176, 122, 0.24);
+}
+
+[data-theme="dark"] .stepper-item.is-upcoming .step-card {
+  border-style: solid;
+  background: linear-gradient(180deg, rgba(13, 26, 41, 0.96), rgba(10, 20, 33, 0.96));
+}
+
+[data-theme="dark"] .stepper-item.is-locked .step-card {
+  background: linear-gradient(180deg, rgba(9, 19, 31, 0.92), rgba(11, 21, 33, 0.95));
+  border-color: rgba(142, 160, 178, 0.16);
+}
+
+[data-theme="dark"] .stepper-item.is-current .step-label,
+[data-theme="dark"] .stepper-item.is-completed .step-label,
+[data-theme="dark"] .stepper-item.is-current .step-caption,
+[data-theme="dark"] .stepper-item.is-clickable .step-caption {
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .step-status-pill.is-current {
+  background: rgba(171, 195, 217, 0.16);
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .step-status-pill.is-locked {
+  background: rgba(142, 160, 178, 0.1);
+  color: #9fb2c4;
+}
+
+.booking-month-nav,
+.calendar-secondary-action,
+.calendar-zoom-close,
+.btn-chip-clear,
+.btn-neuro-secondary,
+.btn-stage-next.is-locked,
+.duration-chip {
+  border-color: var(--border-soft);
+  background: var(--color-white);
+}
+
+[data-theme="dark"] .booking-month-nav,
+[data-theme="dark"] .calendar-secondary-action,
+[data-theme="dark"] .calendar-zoom-close,
+[data-theme="dark"] .btn-chip-clear,
+[data-theme="dark"] .btn-neuro-secondary,
+[data-theme="dark"] .btn-stage-next.is-locked,
+[data-theme="dark"] .duration-chip {
+  border-color: var(--border-soft);
+  background: var(--color-white);
+  color: var(--color-text-main);
+}
+
+[data-theme="dark"] .btn-stage-next.is-locked,
+[data-theme="dark"] .btn-disabled {
+  color: #8ea0b2;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .calendar-selection-banner,
+[data-theme="dark"] .calendar-zoom-picker-shell,
+[data-theme="dark"] .slot-stage-shell .slot-section {
+  background:
+    radial-gradient(circle at top right, rgba(114, 176, 122, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(13, 26, 41, 0.98), rgba(17, 32, 50, 0.95));
+}
+
+[data-theme="dark"] .calendar-selection-banner strong,
+[data-theme="dark"] .booking-month-copy strong,
+[data-theme="dark"] .calendar-zoom-header h3,
+[data-theme="dark"] .selection-insight-card strong,
+[data-theme="dark"] .duration-summary-card strong {
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .calendar-selection-banner p,
+[data-theme="dark"] .calendar-toolbar-helper,
+[data-theme="dark"] .stage-next-helper,
+[data-theme="dark"] .booking-month-kicker,
+[data-theme="dark"] .selection-insight-card small {
+  color: #a9bccd;
+}
+
+[data-theme="dark"] .duration-chip.selected,
+[data-theme="dark"] .btn-portal-primary,
+[data-theme="dark"] .btn-copy-code.prominent {
+  background: linear-gradient(135deg, #aac1d8, #72b07a);
+  color: #08111b;
+  border-color: transparent;
+}
+
+[data-theme="dark"] .btn-ws-secondary {
+  background: rgba(17, 32, 50, 0.94);
+  color: #edf4fb;
+  border-color: rgba(114, 176, 122, 0.22);
+}
+
+.client-portal-wrapper {
+  padding-top: clamp(5.75rem, 7vw, 6.6rem);
+}
+
+.client-portal-wrapper .portal-container {
+  max-width: 960px;
+}
+
+.client-portal-wrapper .guidance-card,
+.client-portal-wrapper .search-container,
+.client-portal-wrapper .portal-management-alert,
+.client-portal-wrapper .ticket-card,
+.client-portal-wrapper .ticket-header,
+.client-portal-wrapper .ticket-footer,
+.client-portal-wrapper .contact-signature,
+.client-portal-wrapper .portal-toast,
+.client-portal-wrapper .reschedule-modal-box,
+.client-portal-wrapper .cancel-soft-modal,
+.client-portal-wrapper .reschedule-panel-intro,
+.client-portal-wrapper .reschedule-editor-head,
+.client-portal-wrapper .reschedule-comparison-modern,
+.client-portal-wrapper .reschedule-selection-pill,
+.client-portal-wrapper .calendar-panel-premium,
+.client-portal-wrapper .duration-panel-premium,
+.client-portal-wrapper .duration-preview-card,
+.client-portal-wrapper .reschedule-mini-facts article,
+.client-portal-wrapper .cancel-soft-summary article,
+.client-portal-wrapper .change-preview-rich,
+.client-portal-wrapper .reschedule-footer,
+.client-portal-wrapper .cancel-soft-footer,
+.client-portal-wrapper .cancel-soft-note {
+  border-color: var(--polish-border-soft);
+  box-shadow: var(--polish-shadow-soft);
+}
+
+.client-portal-wrapper .ticket-card,
+.client-portal-wrapper .reschedule-modal-box,
+.client-portal-wrapper .cancel-soft-modal {
+  border-radius: 30px;
+}
+
+.client-portal-wrapper .ticket-code,
+.client-portal-wrapper .value-tertiary,
+.client-portal-wrapper .search-input,
+.client-portal-wrapper .btn-reschedule,
+.client-portal-wrapper .btn-modal.cancel,
+.client-portal-wrapper .safe-return,
+.client-portal-wrapper .reschedule-month-nav,
+.client-portal-wrapper .duration-quick-btn {
+  border-color: var(--border-soft);
+  background: var(--color-white);
+}
+
+.client-portal-wrapper .ticket-code,
+.client-portal-wrapper .value-tertiary,
+.client-portal-wrapper .search-input,
+.client-portal-wrapper .btn-reschedule,
+.client-portal-wrapper .btn-modal.cancel,
+.client-portal-wrapper .safe-return,
+.client-portal-wrapper .reschedule-month-nav,
+.client-portal-wrapper .duration-quick-btn {
+  background: linear-gradient(180deg, var(--polish-surface-0), var(--polish-surface-1));
+}
+
+.client-portal-wrapper .search-container {
+  align-items: stretch;
+}
+
+.client-portal-wrapper .search-input,
+.client-portal-wrapper .btn-search {
+  min-height: 56px;
+}
+
+.client-portal-wrapper .search-helper {
+  color: var(--cp-text-main);
+}
+
+.client-portal-wrapper .ticket-header,
+.client-portal-wrapper .ticket-footer {
+  background: linear-gradient(180deg, var(--polish-surface-1), var(--polish-surface-2));
+}
+
+.client-portal-wrapper .value-tertiary {
+  border-left: 4px solid var(--cp-accent);
+}
+
+.client-portal-wrapper .contact-signature {
+  padding: 1rem 1.05rem;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--polish-surface-0), var(--polish-surface-1));
+}
+
+.client-portal-wrapper .contact-item svg {
+  flex-shrink: 0;
+}
+
+.client-portal-wrapper .teacher-contact-email {
+  color: var(--cp-primary);
+}
+
+.client-portal-wrapper .teacher-contact-whatsapp {
+  color: #25d366;
+  font-size: 1.05em;
+}
+
+.client-portal-wrapper .btn-action,
+.client-portal-wrapper .btn-modal,
+.client-portal-wrapper .duration-quick-btn {
+  min-height: 50px;
+  border-radius: 16px;
+  font-weight: 800;
+}
+
+.client-portal-wrapper .btn-action {
+  box-shadow: var(--polish-shadow-soft);
+}
+
+.client-portal-wrapper .btn-cancel {
+  background: linear-gradient(180deg, rgba(255, 246, 246, 0.98), rgba(254, 242, 242, 0.96));
+  border-color: rgba(248, 113, 113, 0.22);
+}
+
+.client-portal-wrapper .btn-delete-forever {
+  background: linear-gradient(135deg, #1d344d, #2b5478);
+}
+
+.client-portal-wrapper .portal-results-summary {
+  box-shadow: var(--polish-shadow-soft);
+}
+
+.client-portal-wrapper .arrow-box {
+  background: linear-gradient(135deg, #204060, #589860);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(19, 41, 64, 0.14);
+}
+
+.client-portal-wrapper .empty-state-icon {
+  display: block;
+  margin: 0 auto 1rem;
+  font-size: 3rem;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .client-portal-wrapper .guidance-card,
+[data-theme="dark"] .client-portal-wrapper .search-container,
+[data-theme="dark"] .client-portal-wrapper .portal-management-alert,
+[data-theme="dark"] .client-portal-wrapper .ticket-card,
+[data-theme="dark"] .client-portal-wrapper .ticket-header,
+[data-theme="dark"] .client-portal-wrapper .ticket-footer,
+[data-theme="dark"] .client-portal-wrapper .contact-signature,
+[data-theme="dark"] .client-portal-wrapper .portal-toast,
+[data-theme="dark"] .client-portal-wrapper .reschedule-modal-box,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-modal,
+[data-theme="dark"] .client-portal-wrapper .reschedule-panel-intro,
+[data-theme="dark"] .client-portal-wrapper .reschedule-editor-head,
+[data-theme="dark"] .client-portal-wrapper .reschedule-comparison-modern,
+[data-theme="dark"] .client-portal-wrapper .reschedule-selection-pill,
+[data-theme="dark"] .client-portal-wrapper .calendar-panel-premium,
+[data-theme="dark"] .client-portal-wrapper .duration-panel-premium,
+[data-theme="dark"] .client-portal-wrapper .duration-preview-card,
+[data-theme="dark"] .client-portal-wrapper .reschedule-mini-facts article,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-summary article,
+[data-theme="dark"] .client-portal-wrapper .change-preview-rich,
+[data-theme="dark"] .client-portal-wrapper .reschedule-footer,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-footer,
+[data-theme="dark"] .client-portal-wrapper .cancel-soft-note {
+  background:
+    radial-gradient(circle at top right, rgba(114, 176, 122, 0.08), transparent 34%),
+    linear-gradient(180deg, var(--polish-surface-0), var(--polish-surface-1));
+  border-color: var(--polish-border-soft);
+}
+
+[data-theme="dark"] .client-portal-wrapper .ticket-code,
+[data-theme="dark"] .client-portal-wrapper .value-tertiary,
+[data-theme="dark"] .client-portal-wrapper .search-input,
+[data-theme="dark"] .client-portal-wrapper .btn-reschedule,
+[data-theme="dark"] .client-portal-wrapper .btn-modal.cancel,
+[data-theme="dark"] .client-portal-wrapper .safe-return,
+[data-theme="dark"] .client-portal-wrapper .reschedule-month-nav,
+[data-theme="dark"] .client-portal-wrapper .duration-quick-btn {
+  background: linear-gradient(180deg, var(--polish-surface-1), var(--polish-surface-2));
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .ticket-code,
+[data-theme="dark"] .client-portal-wrapper .search-input {
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-results-summary {
+  background: rgba(114, 176, 122, 0.14);
+  border-color: rgba(114, 176, 122, 0.22);
+  color: #c8f0cf;
+}
+
+[data-theme="dark"] .client-portal-wrapper .search-helper,
+[data-theme="dark"] .client-portal-wrapper .portal-management-copy p,
+[data-theme="dark"] .client-portal-wrapper .portal-toast-copy span,
+[data-theme="dark"] .client-portal-wrapper .portal-toast-copy small,
+[data-theme="dark"] .client-portal-wrapper .reschedule-footer-note,
+[data-theme="dark"] .client-portal-wrapper .duration-preview,
+[data-theme="dark"] .client-portal-wrapper .change-preview span,
+[data-theme="dark"] .client-portal-wrapper .date-box small {
+  color: #b7c7d5;
+}
+
+[data-theme="dark"] .client-portal-wrapper .portal-management-copy strong,
+[data-theme="dark"] .client-portal-wrapper .ticket-code,
+[data-theme="dark"] .client-portal-wrapper .value-tertiary,
+[data-theme="dark"] .client-portal-wrapper .date-box strong,
+[data-theme="dark"] .client-portal-wrapper .change-preview-rich strong,
+[data-theme="dark"] .client-portal-wrapper .reschedule-mini-facts strong,
+[data-theme="dark"] .client-portal-wrapper .reschedule-selection-pill strong,
+[data-theme="dark"] .client-portal-wrapper .duration-preview-card strong,
+[data-theme="dark"] .client-portal-wrapper .portal-toast-copy strong {
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .btn-reschedule {
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .btn-cancel {
+  background: linear-gradient(180deg, rgba(87, 29, 29, 0.38), rgba(69, 16, 16, 0.46));
+  border-color: rgba(248, 113, 113, 0.24);
+  color: #fecaca;
+}
+
+[data-theme="dark"] .client-portal-wrapper .btn-delete-forever {
+  background: linear-gradient(135deg, #aac1d8, #72b07a);
+  color: #07111d;
+}
+
+[data-theme="dark"] .client-portal-wrapper .btn-modal.confirm,
+[data-theme="dark"] .client-portal-wrapper .btn-search {
+  background: linear-gradient(135deg, #1d344d, #2b5478 62%, #589860) !important;
+  border-color: rgba(114, 176, 122, 0.22) !important;
+  color: #edf4fb !important;
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(114, 176, 122, 0.12);
+}
+
+[data-theme="dark"] .client-portal-wrapper .btn-modal.cancel,
+[data-theme="dark"] .client-portal-wrapper .safe-return {
+  background: linear-gradient(180deg, rgba(13, 26, 41, 0.98), rgba(17, 32, 50, 0.95)) !important;
+  border-color: rgba(171, 195, 217, 0.14) !important;
+  color: #edf4fb !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-header {
+  background: linear-gradient(135deg, #112032, #1d344d 62%, #2b5478) !important;
+  color: #edf4fb !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-header h3,
+[data-theme="dark"] .client-portal-wrapper .reschedule-header p {
+  color: #edf4fb !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-step-chip {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(237, 244, 251, 0.16) !important;
+  color: rgba(237, 244, 251, 0.86) !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .reschedule-step-chip.active {
+  background: rgba(114, 176, 122, 0.18) !important;
+  border-color: rgba(114, 176, 122, 0.24) !important;
+  color: #edf4fb !important;
+}
+
+[data-theme="dark"] .client-portal-wrapper .date-box.new,
+[data-theme="dark"] .client-portal-wrapper .reschedule-selection-pill.accent,
+[data-theme="dark"] .client-portal-wrapper .duration-preview-card {
+  background:
+    radial-gradient(circle at top right, rgba(114, 176, 122, 0.16), transparent 38%),
+    linear-gradient(180deg, rgba(15, 34, 28, 0.96), rgba(13, 26, 41, 0.94));
+  border-color: rgba(114, 176, 122, 0.22);
+}
+
+[data-theme="dark"] .client-portal-wrapper .arrow-box {
+  background: linear-gradient(135deg, #aac1d8, #72b07a);
+  color: #08111b;
+}
+
+[data-theme="dark"] .client-portal-wrapper .teacher-contact-email {
+  color: #edf4fb;
+}
+
+[data-theme="dark"] .client-portal-wrapper .empty-state-icon {
+  color: #7f93a8;
+}
+
+.admin-login-card,
+.admin-sidebar-shell,
+.admin-card,
+.admin-kpi-card,
+.admin-modal-card,
+.detail-card,
+.student-card,
+.priority-card,
+.agenda-item,
+.activity-item,
+.timeline-item {
+  border-radius: 24px;
+}
+
+.admin-nav-btn,
+.admin-logout-btn,
+.admin-primary-btn,
+.admin-secondary-btn,
+.admin-danger-btn,
+.status-filter-chip,
+.inline-link-btn,
+.admin-whatsapp-btn {
+  min-height: 48px;
+  border-radius: 16px;
+}
+
+.admin-input,
+.admin-search-box,
+.status-filter-chip,
+.inline-link-btn,
+.admin-secondary-btn,
+.code-mono {
+  border-color: var(--border-soft);
+  background: var(--color-white);
+}
+
+[data-theme="dark"] .admin-input,
+[data-theme="dark"] .admin-search-box,
+[data-theme="dark"] .status-filter-chip,
+[data-theme="dark"] .inline-link-btn,
+[data-theme="dark"] .admin-secondary-btn,
+[data-theme="dark"] .code-mono {
+  border-color: var(--border-soft);
+  background: var(--color-white);
+}
+
+[data-theme="dark"] .admin-nav-btn:not(.is-active),
+[data-theme="dark"] .admin-logout-btn {
+  background: rgba(13, 26, 41, 0.72);
+}
+
+[data-theme="dark"] .admin-nav-btn:hover:not(.is-active),
+[data-theme="dark"] .admin-logout-btn:hover,
+[data-theme="dark"] .status-filter-chip:hover:not(.is-active),
+[data-theme="dark"] .admin-secondary-btn:hover,
+[data-theme="dark"] .inline-link-btn:hover {
+  background: rgba(17, 32, 50, 0.92);
+}
+
+@media (max-width: 960px) {
+  .nav-link-btn {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 720px) {
+  .step-card {
+    min-height: 0;
+  }
+
+  .client-portal-wrapper .ticket-footer {
+    gap: 0.75rem;
+  }
+
+  .client-portal-wrapper .btn-action,
+  .client-portal-wrapper .btn-modal {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+html,
+body {
+  overscroll-behavior-y: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-transitioning :where(
+    body,
+    .navbar-elite,
+    .navbar-utility-cluster,
+    .navbar-brand-logo,
+    .nav-link-btn,
+    .nav-utility-btn,
+    .theme-toggle-btn,
+    .booking-page-wrapper,
+    .form-card-elevation,
+    .premium-input,
+    .adult-mode-copy,
+    .adult-state-card,
+    .selection-insight-card,
+    .slot-stage-shell .slot-section,
+    .calendar-selection-banner,
+    .calendar-glass-box,
+    .calendar-zoom-dialog,
+    .calendar-zoom-header,
+    .calendar-zoom-picker-shell,
+    .duration-selector-premium,
+    .duration-summary-card,
+    .booking-summary-card-expanded,
+    .summary-detail-card,
+    .summary-management-mini-card,
+    .success-summary-card,
+    .success-management-pill,
+    .success-management-card,
+    .success-side-column,
+    .success-modal-actions,
+    .success-code-panel-prominent,
+    .journey-compass,
+    .journey-meter,
+    .neuro-stepper,
+    .step-card,
+    .step-status-pill,
+    .step-circle,
+    .stepper-progress-track,
+    .stepper-progress-fill,
+    .stepper-nav-hint,
+    .guidance-card,
+    .search-container,
+    .portal-management-alert,
+    .ticket-card,
+    .ticket-header,
+    .ticket-footer,
+    .contact-signature,
+    .portal-toast,
+    .reschedule-modal-box,
+    .cancel-soft-modal,
+    .reschedule-panel-intro,
+    .reschedule-editor-head,
+    .reschedule-comparison-modern,
+    .reschedule-selection-pill,
+    .calendar-panel-premium,
+    .duration-panel-premium,
+    .duration-preview-card,
+    .reschedule-mini-facts article,
+    .cancel-soft-summary article,
+    .change-preview-rich,
+    .reschedule-footer,
+    .cancel-soft-footer,
+    .cancel-soft-note,
+    .admin-login-shell,
+    .admin-login-card,
+    .admin-nav-btn,
+    .admin-primary-btn,
+    .admin-secondary-btn,
+    .admin-danger-btn,
+    .admin-logout-btn,
+    .status-filter-chip,
+    .inline-link-btn,
+    .footer-elite,
+    .footer-link-item,
+    .contact-card,
+    .social-bubble,
+    .btn-up-floating
+  ),
+  html.theme-transitioning :where(
+    .navbar-elite,
+    .navbar-brand-logo,
+    .journey-meter,
+    .form-card-elevation,
+    .ticket-card,
+    .admin-login-card,
+    .footer-elite
+  )::before,
+  html.theme-transitioning :where(
+    .navbar-elite,
+    .navbar-brand-logo,
+    .journey-meter,
+    .form-card-elevation,
+    .ticket-card,
+    .admin-login-card,
+    .footer-elite
+  )::after {
+    transition:
+      background-color 260ms ease,
+      background-image 340ms ease,
+      color 220ms ease,
+      border-color 260ms ease,
+      box-shadow 320ms ease,
+      filter 260ms ease,
+      opacity 220ms ease;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 320ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+.journey-compass,
+.neuro-stepper {
+  border-color: var(--polish-border-soft);
+  box-shadow: var(--polish-shadow-card);
+}
+
+.journey-compass {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.journey-meter,
+.stepper-nav-hint {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(244, 248, 251, 0.88));
+}
+
+.stepper-progress-fill {
+  box-shadow: 0 14px 28px rgba(32, 64, 96, 0.16);
+}
+
+.step-circle.current {
+  box-shadow:
+    0 20px 40px rgba(24, 56, 88, 0.2),
+    0 0 0 10px rgba(88, 152, 96, 0.12);
+}
+
+.stepper-item.is-locked .step-circle,
+.stepper-item.is-upcoming .step-circle {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(242, 246, 249, 0.94));
+}
+
+[data-theme="dark"] .journey-compass,
+[data-theme="dark"] .neuro-stepper {
+  background:
+    radial-gradient(circle at top right, rgba(114, 176, 122, 0.1), transparent 28%),
+    linear-gradient(180deg, rgba(10, 20, 33, 0.98), rgba(13, 26, 41, 0.96));
+  border-color: rgba(171, 195, 217, 0.16);
+}
+
+[data-theme="dark"] .journey-meter,
+[data-theme="dark"] .stepper-nav-hint {
+  background: linear-gradient(180deg, rgba(17, 32, 50, 0.96), rgba(13, 26, 41, 0.94));
+}
+
+[data-theme="dark"] .stepper-progress-fill {
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .stepper-item.is-locked .step-circle,
+[data-theme="dark"] .stepper-item.is-upcoming .step-circle {
+  background: linear-gradient(180deg, rgba(14, 28, 43, 0.98), rgba(11, 22, 35, 0.96));
+  color: #9fb2c4;
+}
+
+[data-theme="dark"] .stepper-item.is-locked .step-card {
+  background: linear-gradient(180deg, rgba(9, 18, 29, 0.96), rgba(11, 21, 33, 0.98));
+}
+
+[data-theme="dark"] .navbar-brand-logo {
+  position: relative;
+  padding: 0.34rem 0.95rem !important;
+  border-radius: 26px !important;
+  border: 1px solid rgba(114, 176, 122, 0.36) !important;
+  background:
+    radial-gradient(circle at 12% 50%, rgba(114, 176, 122, 0.26), transparent 34%),
+    linear-gradient(135deg, rgba(249, 252, 249, 0.98), rgba(223, 235, 228, 0.94)) !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62) !important;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .navbar-brand-logo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.78), transparent 34%),
+    radial-gradient(circle at 88% 45%, rgba(24, 56, 88, 0.13), transparent 42%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .logo-img-horizontal {
+  position: relative;
+  z-index: 1;
+  filter:
+    contrast(1.12)
+    saturate(1.08)
+    brightness(0.98)
+    drop-shadow(0 8px 14px rgba(7, 17, 29, 0.18));
+}
+
+.admin-login-shell {
+  background:
+    radial-gradient(circle at top, rgba(88, 152, 96, 0.08), transparent 26%),
+    linear-gradient(180deg, rgba(247, 250, 252, 0.96), rgba(236, 244, 248, 0.98));
+}
+
+[data-theme="dark"] .admin-login-shell {
+  background:
+    radial-gradient(circle at top, rgba(114, 176, 122, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(7, 17, 29, 0.98), rgba(9, 20, 33, 0.98));
+}
+
+.admin-login-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-login-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top right, rgba(88, 152, 96, 0.12), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(43, 84, 120, 0.08), transparent 26%);
+  pointer-events: none;
+}
+
+.admin-login-card > * {
+  position: relative;
+}
+
+.footer-elite {
+  background:
+    radial-gradient(circle at top, rgba(88, 152, 96, 0.06), transparent 22%),
+    linear-gradient(180deg, rgba(248, 251, 253, 0.98), rgba(241, 245, 249, 0.98));
+}
+
+[data-theme="dark"] .footer-elite {
+  background:
+    radial-gradient(circle at top, rgba(114, 176, 122, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(7, 17, 29, 0.98), rgba(10, 20, 33, 0.98));
+}
+
+.footer-link-item,
+.contact-card,
+.social-bubble,
+.btn-up-floating {
+  transition:
+    transform 0.28s ease,
+    box-shadow 0.28s ease,
+    background 0.28s ease,
+    color 0.28s ease,
+    border-color 0.28s ease;
+}
+
+.contact-card,
+.footer-link-item {
+  border-radius: 18px;
+}
+
+.footer-link-item:hover,
+.contact-card:hover {
+  box-shadow: 0 18px 34px rgba(19, 41, 64, 0.08);
+}
+
+.social-bubble {
+  border: 1px solid transparent;
+}
+
+[data-theme="dark"] .social-bubble {
+  border-color: rgba(171, 195, 217, 0.12);
+}
+
+.btn-up-floating {
+  background: linear-gradient(135deg, #2b5478, #589860);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+}
+
+.btn-up-floating:hover {
+  transform: translateY(-4px);
+}
+
+.journey-meter {
+  background: linear-gradient(145deg, #1d344d, #2b5478 62%, #589860) !important;
+  color: #eef4fb;
+}
+
+.journey-meter span,
+.journey-meter strong {
+  color: #ffffff;
+}
+
+.journey-meter-copy,
+.journey-meter small {
+  color: rgba(237, 244, 251, 0.84);
+}
+
+.journey-meter-track {
+  background: rgba(237, 244, 251, 0.16);
+}
+
+[data-theme="dark"] .journey-meter {
+  background: linear-gradient(145deg, #112032, #1d344d 60%, #2d5d65) !important;
+  color: #edf4fb;
+}
+
+/* ========================================================================== */
+/* Accessibility pass - mayor legibilidad sin romper la identidad visual      */
+/* ========================================================================== */
+
+.form-card-elevation {
+  max-width: min(960px, 100%);
+}
+
+.confirmation-stage-note.step-empathy-note,
+.stepper-head-copy p,
+.stepper-nav-hint,
+.step-action-hint,
+.step-caption,
+.field-helper,
+.summary-lead,
+.summary-section-heading p,
+.summary-highlight-card p,
+.summary-management-copy p,
+.client-portal-wrapper .portal-subtitle,
+.client-portal-wrapper .search-helper,
+.client-portal-wrapper .portal-management-copy p,
+.client-portal-wrapper .portal-toast-copy span,
+.client-portal-wrapper .portal-toast-copy small,
+.client-portal-wrapper .date-box small,
+.admin-login-card p,
+.admin-hero p,
+.admin-sidebar-card p,
+.empty-copy,
+.admin-kpi-card span,
+.admin-kpi-card small,
+.admin-bar-value,
+.admin-bar-label {
+  font-size: var(--font-size-caption);
+  line-height: 1.65;
+}
+
+.support-pill,
+.manage-booking-link,
+.journey-kicker,
+.journey-next-pill,
+.journey-mini-chip,
+.stepper-kicker,
+.stepper-current-pill,
+.step-status-pill,
+.label-row label,
+.adult-mode-kicker,
+.insight-label,
+.legend-item,
+.confirmation-stage-eyebrow,
+.confirmation-hero-kicker,
+.duration-kicker,
+.summary-kicker,
+.summary-section-heading span,
+.summary-detail-card span,
+.summary-note-kicker,
+.client-portal-wrapper .label,
+.client-portal-wrapper .contact-label,
+.client-portal-wrapper .status-badge,
+.admin-login-eyebrow,
+.admin-eyebrow,
+.card-kicker,
+.sidebar-kicker,
+.admin-table th,
+.status-filter-row span {
+  font-size: var(--font-size-eyebrow);
+  letter-spacing: 0.06em;
+}
+
+.client-portal-wrapper .portal-container {
+  max-width: 960px;
+}
+
+.client-portal-wrapper .contact-value,
+.client-portal-wrapper .contact-item,
+.client-portal-wrapper .search-input,
+.client-portal-wrapper .btn-search,
+.client-portal-wrapper .btn-action,
+.admin-input,
+.admin-search-box input,
+.admin-nav-btn,
+.admin-primary-btn,
+.admin-secondary-btn,
+.admin-danger-btn,
+.admin-logout-btn,
+.inline-link-btn {
+  font-size: var(--font-size-label);
+}
+
+.form-main-title,
+.client-portal-wrapper .portal-title,
+.admin-hero h1 {
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.summary-overview-head h4,
+.confirmation-hero-main h4,
+.duration-selector-header h4 {
+  line-height: 1.12;
+}
+
+.selection-insight-card strong,
+.summary-highlight-card strong,
+.summary-detail-card strong,
+.client-portal-wrapper .value-primary,
+.client-portal-wrapper .highlight-name,
+.admin-card h3,
+.admin-sidebar-card h3 {
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .form-card-elevation {
+    padding: 1.25rem 1rem;
+  }
+
+  .support-pill {
+    font-size: max(var(--font-size-eyebrow), 0.82rem);
+  }
+}

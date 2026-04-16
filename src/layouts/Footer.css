@@ -5,36 +5,32 @@
 
 /* Busca las variables :root de tu Footer.css y reemplázalas por estas */
 :root {
-  --bg-footer-base: #f8fafc; /* Gris hiper claro, casi blanco */
-  --bg-footer-panel: #f1f5f9; /* Ligeramente más oscurito para el panel de abajo */
-  --bg-card-hover: #ffffff; /* Las tarjetas se iluminan a blanco puro al pasar el mouse */
-
-  --ft-primary: #10b981;
-  --ft-primary-dark: #059669;
-  --ft-primary-glow: rgba(16, 185, 129, 0.15);
-
-  --text-pure: #0f172a; /* Títulos en azul marino muy oscuro */
-  --text-body: #475569; /* Texto normal en gris medio */
-  --text-muted: #64748b; /* Textos secundarios en gris un poco más claro */
-
-  --border-light: #e2e8f0; /* Bordes sutiles en gris claro */
-  --border-strong: #cbd5e1;
-
-  --transition-smooth: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --bg-footer-base: var(--color-bg-light);
+  --bg-footer-panel: var(--color-surface-soft);
+  --bg-card-hover: var(--color-white);
+  --ft-primary: var(--color-accent);
+  --ft-primary-dark: var(--color-primary-dark);
+  --ft-primary-glow: var(--nav-accent-glow);
+  --text-pure: var(--color-text-main);
+  --text-body: var(--color-text-muted);
+  --text-muted: var(--color-text-soft);
+  --border-light: var(--border-soft);
+  --border-strong: var(--border-strong);
+  --transition-smooth: var(--transition-smooth);
 }
 
 [data-theme="dark"] {
-  --bg-footer-base: #07111f;
-  --bg-footer-panel: #0f172a;
-  --bg-card-hover: #111827;
-  --ft-primary: #34d399;
-  --ft-primary-dark: #10b981;
-  --ft-primary-glow: rgba(52, 211, 153, 0.22);
-  --text-pure: #e5eef7;
-  --text-body: #cbd5e1;
-  --text-muted: #94a3b8;
-  --border-light: rgba(148, 163, 184, 0.2);
-  --border-strong: rgba(148, 163, 184, 0.3);
+  --bg-footer-base: var(--color-bg-light);
+  --bg-footer-panel: var(--color-surface-soft);
+  --bg-card-hover: var(--color-white);
+  --ft-primary: var(--color-accent);
+  --ft-primary-dark: var(--color-primary-dark);
+  --ft-primary-glow: var(--nav-accent-glow);
+  --text-pure: var(--color-text-main);
+  --text-body: var(--color-text-muted);
+  --text-muted: var(--color-text-soft);
+  --border-light: var(--border-soft);
+  --border-strong: var(--border-strong);
 }
 .footer-elite {
   background-color: var(--bg-footer-base);
@@ -529,4 +525,26 @@
     width: 45px;
     height: 45px;
   }
+}
+
+.brand-titles span,
+.footer-section-title,
+.contact-label,
+.value-tag {
+  font-size: var(--font-size-eyebrow);
+}
+
+.neuro-copy,
+.contact-value,
+.copyright-area p {
+  font-size: var(--font-size-caption);
+  line-height: 1.7;
+}
+
+.link-text {
+  font-size: var(--font-size-label);
+}
+
+.copyright-sub {
+  font-size: 0.82rem;
 }
