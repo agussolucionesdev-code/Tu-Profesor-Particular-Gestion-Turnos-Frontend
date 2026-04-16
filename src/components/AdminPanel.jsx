@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FaBell,
@@ -14,11 +13,7 @@ import {
   FaEye,
   FaFilter,
   FaIdCard,
-  FaInfoCircle,
   FaLayerGroup,
-  FaLightbulb,
-  FaLock,
-  FaMoneyBillWave,
   FaPlus,
   FaRegClock,
   FaSchool,
@@ -26,13 +21,11 @@ import {
   FaSignOutAlt,
   FaSpinner,
   FaTrashAlt,
-  FaUserTie,
   FaUsers,
   FaWhatsapp,
 } from "react-icons/fa";
 import {
   buildStudentKey as studentKey,
-  formatCurrencyARS as money,
   formatDayLabel as formatDay,
   formatLongDateLabel as formatDate,
   formatShortDateLabel as formatShortDate,
@@ -46,6 +39,16 @@ import {
   normalizeText as norm,
   toSafeDate as toDate,
 } from "../utils/bookingFormatters";
+import {
+  fetchAllBookings,
+  updateBooking,
+  deleteBooking,
+  deleteAllBookings,
+} from "../api/bookingApi";
+import { useAdminAuth } from "../hooks/useAdminAuth";
+import AdminLoginScreen from "./admin/AdminLoginScreen";
+import BookingEditModal from "./admin/BookingEditModal";
+import BookingDetailModal from "./admin/BookingDetailModal";
 import "./AdminPanel.css";
 import "../styles/theme-polish.css";
 import "../styles/accessibility-system.css";
@@ -59,39 +62,29 @@ const VIEW_OPTIONS = [
 ];
 
 const AdminPanel = () => {
-  const API_URL = import.meta.env.VITE_BACKEND_URL
-    ? `${import.meta.env.VITE_BACKEND_URL}/api/bookings`
-    : "http://localhost:4100/api/bookings";
-  const AUTH_URL = import.meta.env.VITE_BACKEND_URL
-    ? `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`
-    : "http://localhost:4100/api/auth/login";
+  const {
+    authConfig,
+    isAuthenticated,
+    username,
+    password,
+    loading,
+    setUsername,
+    setPassword,
+    handleLogin,
+    handleLogout,
+  } = useAdminAuth();
 
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [sentMessages, setSentMessages] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("Todos");
   const [activeView, setActiveView] = useState("overview");
-  const [authToken, setAuthToken] = useState(() => sessionStorage.getItem("adminToken") || "");
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => Boolean(sessionStorage.getItem("adminToken")),
-  );
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [viewBooking, setViewBooking] = useState(null);
   const [editNotes, setEditNotes] = useState("");
   const [editEvolution, setEditEvolution] = useState("");
   const [editEmotionalState, setEditEmotionalState] = useState("");
-  const [draggedBooking, setDraggedBooking] = useState(null);
-  const [quickActionMenu, setQuickActionMenu] = useState(null);
-  const panelRef = useRef(null);
-
-  const authConfig = useMemo(
-    () => ({ headers: { Authorization: `Bearer ${authToken}` } }),
-    [authToken],
-  );
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -104,28 +97,28 @@ const AdminPanel = () => {
         if (e.key === "r" || e.key === "R") {
           e.preventDefault();
           setDataLoading(true);
-          axios.get(API_URL, authConfig)
-            .then(res => setBookings(Array.isArray(res.data.data) ? res.data.data : []))
+          fetchAllBookings(authConfig)
+            .then((res) =>
+              setBookings(Array.isArray(res.data.data) ? res.data.data : []),
+            )
             .finally(() => setDataLoading(false));
         }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isAuthenticated, API_URL, authConfig]);
+  }, [isAuthenticated, authConfig]);
 
   useEffect(() => {
-    const fetchBookings = async () => {
+    const loadBookings = async () => {
       setDataLoading(true);
       try {
-        const response = await axios.get(API_URL, authConfig);
+        const response = await fetchAllBookings(authConfig);
         setBookings(Array.isArray(response.data.data) ? response.data.data : []);
       } catch (error) {
         console.error("Error al cargar reservas:", error);
         if (error.response?.status === 401) {
-          sessionStorage.removeItem("adminToken");
-          setAuthToken("");
-          setIsAuthenticated(false);
+          handleLogout();
           setBookings([]);
           alert("Tu sesión expiró. Inicia sesión nuevamente.");
         }
@@ -134,8 +127,8 @@ const AdminPanel = () => {
       }
     };
 
-    if (isAuthenticated && authToken) fetchBookings();
-  }, [API_URL, authConfig, authToken, isAuthenticated]);
+    if (isAuthenticated) loadBookings();
+  }, [authConfig, isAuthenticated, handleLogout]);
 
   const sortedBookings = useMemo(
     () =>
@@ -185,11 +178,6 @@ const AdminPanel = () => {
       confirmed: enriched.filter((booking) => bookingStatusBucket(booking.status) === "Confirmado").length,
       cancelled: enriched.filter((booking) => booking.status === "Cancelado").length,
       finalized: enriched.filter((booking) => booking.status === "Finalizado").length,
-      income: enriched.reduce((sum, booking) => {
-        return bookingStatusBucket(booking.status) === "Confirmado"
-          ? sum + Number(booking.price || 0)
-          : sum;
-      }, 0),
     };
 
     return { now, today, next24h, enriched, stats };
@@ -208,12 +196,6 @@ const AdminPanel = () => {
     const overduePending = dashboard.enriched.filter(
       (booking) => booking.status === "Pendiente" && booking.start && booking.start < dashboard.now,
     );
-    const noPriceBookings = dashboard.enriched.filter(
-      (booking) =>
-        bookingStatusBucket(booking.status) === "Confirmado" &&
-        Number(booking.price || 0) <= 0,
-    );
-
     const weekFlow = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(dashboard.today);
       date.setDate(dashboard.today.getDate() + index);
@@ -250,10 +232,6 @@ const AdminPanel = () => {
           phone: booking.phone,
           email: booking.email,
           totalBookings: 1,
-          totalIncome:
-            bookingStatusBucket(booking.status) === "Confirmado"
-              ? Number(booking.price || 0)
-              : 0,
           nextBooking:
             booking.start && booking.start >= dashboard.now && booking.status !== "Cancelado"
               ? booking.start
@@ -275,10 +253,6 @@ const AdminPanel = () => {
       }
 
       existing.totalBookings += 1;
-      existing.totalIncome +=
-        bookingStatusBucket(booking.status) === "Confirmado"
-          ? Number(booking.price || 0)
-          : 0;
       if (booking.subject) existing.subjects.add(booking.subject);
       if (
         booking.start &&
@@ -303,7 +277,6 @@ const AdminPanel = () => {
       upcomingBookings,
       upcoming24h,
       overduePending,
-      noPriceBookings,
       weekFlow,
       topSubjects,
       students,
@@ -330,31 +303,13 @@ const AdminPanel = () => {
     return "No hay urgencias activas. Es un buen momento para revisar alumnos, agenda e ingresos.";
   }, [dashboard.stats.pending, dashboard.stats.total, overviewData.todayBookings.length, overviewData.upcoming24h.length]);
 
-  const handleLogin = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.post(AUTH_URL, {
-        username: username.trim(),
-        password: password.trim(),
-      });
-      if (response.data.success && response.data.token) {
-        sessionStorage.setItem("adminToken", response.data.token);
-        setAuthToken(response.data.token);
-        setIsAuthenticated(true);
-      }
-    } catch (error) {
-      console.error("Error de autenticación:", error);
-      alert("Credenciales incorrectas.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleQuickStatusChange = async (id, newStatus) => {
     try {
-      await axios.put(`${API_URL}/${id}`, { status: newStatus }, authConfig);
+      await updateBooking(id, { status: newStatus }, authConfig);
       setBookings((current) =>
-        current.map((booking) => (booking._id === id ? { ...booking, status: newStatus } : booking)),
+        current.map((booking) =>
+          booking._id === id ? { ...booking, status: newStatus } : booking,
+        ),
       );
     } catch {
       alert("No se pudo actualizar el estado.");
@@ -385,10 +340,12 @@ const AdminPanel = () => {
         studentEvolution: editEvolution,
         emotionalState: editEmotionalState,
       };
-      await axios.put(`${API_URL}/${selectedBooking._id}`, payload, authConfig);
+      await updateBooking(selectedBooking._id, payload, authConfig);
       setBookings((current) =>
         current.map((booking) =>
-          booking._id === selectedBooking._id ? { ...booking, ...payload } : booking,
+          booking._id === selectedBooking._id
+            ? { ...booking, ...payload }
+            : booking,
         ),
       );
       setSelectedBooking(null);
@@ -400,64 +357,21 @@ const AdminPanel = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("¿Estás seguro de eliminar esta reserva?")) return;
     try {
-      await axios.delete(`${API_URL}/${id}`, authConfig);
+      await deleteBooking(id, authConfig);
       setBookings((current) => current.filter((booking) => booking._id !== id));
     } catch {
       alert("Error al eliminar la reserva.");
     }
   };
 
-  const handleDragStart = (e, booking) => {
-    setDraggedBooking(booking);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", booking._id);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = async (e, targetDate) => {
-    e.preventDefault();
-    if (!draggedBooking || !targetDate) return;
-    
-    const originalDate = new Date(draggedBooking.timeSlot);
-    const newDate = new Date(targetDate);
-    newDate.setHours(originalDate.getHours(), originalDate.getMinutes());
-    
-    try {
-      await axios.put(
-        `${API_URL}/${draggedBooking._id}`,
-        { timeSlot: newDate.toISOString() },
-        authConfig
-      );
-      setBookings((current) =>
-        current.map((b) =>
-          b._id === draggedBooking._id ? { ...b, timeSlot: newDate.toISOString() } : b
-        )
-      );
-      setDraggedBooking(null);
-    } catch {
-      alert("No se pudo reprogramar el turno.");
-    }
-  };
-
-  const openMercadoPago = (booking) => {
-    const amount = booking.price || 0;
-    const description = `Clase particular - ${booking.studentName} - ${booking.subject}`;
-    const externalRef = booking.bookingCode;
-    const mpUrl = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=PLACEHOLDER&external_reference=${externalRef}&description=${encodeURIComponent(description)}&back_url=${encodeURIComponent(process.env.FRONTEND_URL || window.location.origin)}`;
-    window.open(mpUrl, "_blank", "noopener,noreferrer");
-  };
-
   const handleDeleteAll = async () => {
-    if (!window.confirm("Estás por borrar toda la base de reservas. ¿Continuar?")) return;
+    if (!window.confirm("Estás por borrar toda la base de reservas. ¿Continuar?"))
+      return;
     const confirmation = prompt("Escribe ELIMINAR para confirmar:");
     if (confirmation !== "ELIMINAR") return;
     setDataLoading(true);
     try {
-      await axios.delete(`${API_URL}/all`, authConfig);
+      await deleteAllBookings(authConfig);
       setBookings([]);
     } catch {
       alert("No se pudo limpiar la base.");
@@ -468,84 +382,14 @@ const AdminPanel = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="admin-login-shell">
-        <div className="admin-login-layout">
-          <section className="admin-login-intro" aria-label="Beneficios del panel">
-            <span className="admin-login-kicker">Gestión interna</span>
-            <h1>Un panel claro para decidir rápido y sin ruido</h1>
-            <p>
-              La idea es que, apenas entres, tengas agenda, alumnos y
-              seguimiento en una interfaz legible, ordenada y fácil de recorrer
-              incluso en jornadas largas.
-            </p>
-
-            <div className="admin-login-benefits">
-              <article className="admin-login-benefit">
-                <FaCalendarCheck />
-                <strong>Agenda del día visible</strong>
-                <p>Prioriza lo urgente y te deja ver rápido las próximas clases.</p>
-              </article>
-
-              <article className="admin-login-benefit">
-                <FaUsers />
-                <strong>Seguimiento por alumno</strong>
-                <p>Encontrás responsables, historial y contexto sin perder foco.</p>
-              </article>
-
-              <article className="admin-login-benefit">
-                <FaWhatsapp />
-                <strong>Mensajes y acción rápida</strong>
-                <p>Contactás y actualizás estados desde el mismo flujo de trabajo.</p>
-              </article>
-            </div>
-
-            <div className="admin-login-trust">
-              <FaInfoCircle />
-              <p>
-                Este acceso queda pensado solo para la gestión del profesor, con
-                lectura reforzada, buen contraste y una jerarquía visual más
-                descansada.
-              </p>
-            </div>
-          </section>
-
-        <div className="admin-login-card">
-          <div className="admin-login-mark">
-            <FaLock />
-          </div>
-          <span className="admin-login-eyebrow">Panel del profesor</span>
-          <h2>Entrar al centro de control</h2>
-          <p>Gestioná turnos, agenda, alumnos y seguimiento desde un solo lugar.</p>
-
-          <label className="admin-field">
-            <span>Usuario</span>
-            <input
-              className="admin-input"
-              type="text"
-              placeholder="Correo de acceso"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-            />
-          </label>
-
-          <label className="admin-field">
-            <span>Contraseña</span>
-            <input
-              className="admin-input"
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && handleLogin()}
-            />
-          </label>
-
-          <button className="admin-primary-btn" onClick={handleLogin} disabled={loading}>
-            {loading ? <FaSpinner className="spinner" /> : "Ingresar"}
-          </button>
-          </div>
-        </div>
-      </div>
+      <AdminLoginScreen
+        username={username}
+        password={password}
+        loading={loading}
+        onUsernameChange={(e) => setUsername(e.target.value)}
+        onPasswordChange={(e) => setPassword(e.target.value)}
+        onLogin={handleLogin}
+      />
     );
   }
 
@@ -601,8 +445,8 @@ const AdminPanel = () => {
               <span>{overviewData.upcoming24h.length} avisos próximos</span>
             </div>
             <div>
-              <FaMoneyBillWave />
-              <span>{overviewData.noPriceBookings.length} cobros sin cargar</span>
+              <FaExclamationTriangle />
+              <span>{dashboard.stats.cancelled} cancelaciones registradas</span>
             </div>
             <div>
               <FaUsers />
@@ -614,9 +458,7 @@ const AdminPanel = () => {
         <button
           className="admin-logout-btn"
           onClick={() => {
-            sessionStorage.removeItem("adminToken");
-            setAuthToken("");
-            setIsAuthenticated(false);
+            handleLogout();
             setBookings([]);
           }}
         >
@@ -648,12 +490,12 @@ const AdminPanel = () => {
         <section className="admin-kpi-grid">
           <article className="admin-kpi-card">
             <div className="kpi-icon emerald">
-              <FaMoneyBillWave />
+              <FaCalendarCheck />
             </div>
             <div>
-              <span>Ingresos registrados</span>
-              <strong>{money(dashboard.stats.income)}</strong>
-              <small>{dashboard.stats.confirmed + dashboard.stats.finalized} turnos monetizados</small>
+              <span>Próximas clases</span>
+              <strong>{overviewData.upcomingBookings.length}</strong>
+              <small>{overviewData.upcoming24h.length} dentro de las próximas 24 hs</small>
             </div>
           </article>
           <article className="admin-kpi-card">
@@ -808,9 +650,9 @@ const AdminPanel = () => {
                     <p>Tu agenda diaria ya está resumida para abrir el panel y saber dónde estás parado.</p>
                   </div>
                   <div className="priority-card success">
-                    <strong>Cobros a completar</strong>
-                    <span>{overviewData.noPriceBookings.length}</span>
-                    <p>Conviene cargar el valor apenas cerrás cada clase para no perder trazabilidad.</p>
+                    <strong>Seguimiento pedagógico</strong>
+                    <span>{overviewData.students.length}</span>
+                    <p>Perfiles, materias y próximos encuentros listos para preparar cada clase con contexto.</p>
                   </div>
                 </div>
               </article>
@@ -962,8 +804,8 @@ const AdminPanel = () => {
                     </div>
                     <div className="student-card-footer">
                       <div>
-                        <small>Ingresos</small>
-                        <strong>{money(student.totalIncome)}</strong>
+                        <small>Próximo paso</small>
+                        <strong>{student.nextBooking ? "Preparar clase" : "Sin turno"}</strong>
                       </div>
                       <button
                         type="button"
@@ -990,12 +832,6 @@ const AdminPanel = () => {
                 <span className="card-kicker">Gestor</span>
                 <h3>Control detallado de turnos</h3>
               </div>
-              {bookings.length > 0 && (
-                <button type="button" className="admin-danger-btn" onClick={handleDeleteAll} disabled={dataLoading}>
-                  <FaTrashAlt />
-                  Limpiar base
-                </button>
-              )}
             </div>
 
             <div className="admin-toolbar">
@@ -1038,14 +874,13 @@ const AdminPanel = () => {
                       <th>Alumno</th>
                       <th>Horario</th>
                       <th>Contacto</th>
-                      <th>Valor</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredBookings.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="empty-table-state">No se encontraron reservas con esos filtros.</td>
+                        <td colSpan="6" className="empty-table-state">No se encontraron reservas con esos filtros.</td>
                       </tr>
                     ) : (
                       filteredBookings.map((booking) => (
@@ -1060,7 +895,6 @@ const AdminPanel = () => {
                               {sentMessages[booking._id] ? "Enviado" : "WhatsApp"}
                             </button>
                           </td>
-                          <td><strong className="table-price">{money(booking.price || 0)}</strong></td>
                           <td>
                             <div className="table-actions">
                               {booking.status === "Pendiente" && (
@@ -1080,159 +914,45 @@ const AdminPanel = () => {
                 </table>
               </div>
             )}
+            {bookings.length > 0 && (
+              <div className="admin-danger-zone">
+                <div>
+                  <strong>Zona de resguardo</strong>
+                  <p>Usá esta acción solo para limpiar datos de prueba. No afecta la navegación ni la agenda hasta que confirmes dos veces.</p>
+                </div>
+                <button type="button" className="admin-danger-btn" onClick={handleDeleteAll} disabled={dataLoading}>
+                  <FaTrashAlt />
+                  Limpiar base de prueba
+                </button>
+              </div>
+            )}
           </section>
         )}
       </main>
 
       {selectedBooking && (
-        <div className="admin-modal-overlay" onClick={() => setSelectedBooking(null)}>
-          <div className="admin-modal-card" onClick={(event) => event.stopPropagation()}>
-            <div className="admin-modal-header">
-              <div>
-                <span className="card-kicker">Ajustes de la reserva</span>
-                <h3>{selectedBooking.studentName}</h3>
-              </div>
-              <span className="code-mono">{selectedBooking.bookingCode}</span>
-            </div>
-
-<div className="admin-modal-body">
-  <label className="admin-field">
-    <span>Estado</span>
-    <select
-      className="admin-input"
-      value={bookingStatusLabel(selectedBooking.status)}
-      onChange={(event) =>
-        setSelectedBooking({ ...selectedBooking, status: event.target.value })
-      }
-    >
-      <option value="Confirmado">Confirmado</option>
-      <option value="Cancelado">Cancelado</option>
-    </select>
-  </label>
-
-  <label className="admin-field">
-    <span>Notas privadas</span>
-    <textarea
-      className="admin-input admin-textarea"
-      rows="4"
-      value={editNotes}
-      onChange={(event) => setEditNotes(event.target.value)}
-      placeholder="Seguimiento, forma de pago, temas a reforzar..."
-    />
-  </label>
-
-  <label className="admin-field">
-    <span>Evolución del alumno</span>
-    <textarea
-      className="admin-input admin-textarea"
-      rows="5"
-      value={editEvolution}
-      onChange={(event) => setEditEvolution(event.target.value)}
-      placeholder="¿Qué avances ha tenido? Temas superados, dificultades actuales..."
-    />
-  </label>
-
-  <label className="admin-field">
-    <span>Estado emocional y actitudinal</span>
-    <textarea
-      className="admin-input admin-textarea"
-      rows="3"
-      value={editEmotionalState}
-      onChange={(event) => setEditEmotionalState(event.target.value)}
-      placeholder="¿Cómo se siente el alumno? Motivación, estrés, actitud ante el estudio..."
-    />
-  </label>
-</div>
-
-            <div className="admin-modal-footer">
-              <button type="button" className="admin-secondary-btn" onClick={() => setSelectedBooking(null)}>
-                Cancelar
-              </button>
-              <button type="button" className="admin-primary-btn slim" onClick={handleUpdate}>
-                Guardar cambios
-              </button>
-            </div>
-          </div>
-        </div>
+        <BookingEditModal
+          booking={selectedBooking}
+          editNotes={editNotes}
+          editEvolution={editEvolution}
+          editEmotionalState={editEmotionalState}
+          onClose={() => setSelectedBooking(null)}
+          onNotesChange={(e) => setEditNotes(e.target.value)}
+          onEvolutionChange={(e) => setEditEvolution(e.target.value)}
+          onEmotionalStateChange={(e) => setEditEmotionalState(e.target.value)}
+          onStatusChange={(e) =>
+            setSelectedBooking({ ...selectedBooking, status: e.target.value })
+          }
+          onSave={handleUpdate}
+        />
       )}
 
       {viewBooking && (
-        <div className="admin-modal-overlay" onClick={() => setViewBooking(null)}>
-          <div className="admin-modal-card large" onClick={(event) => event.stopPropagation()}>
-            <div className="admin-modal-header highlight">
-              <div className="modal-student-title">
-                <div className="modal-icon-shell">
-                  <FaUserTie />
-                </div>
-                <div>
-                  <span className="card-kicker">Ficha completa</span>
-                  <h3>{viewBooking.studentName}</h3>
-                </div>
-              </div>
-              <span className={`status-pill ${bookingStatusLabel(viewBooking.status)}`}>{bookingStatusLabel(viewBooking.status)}</span>
-            </div>
-
-<div className="admin-modal-body">
-  <div className="admin-detail-grid">
-    <article className="detail-card">
-      <h4><FaInfoCircle />Contacto</h4>
-      <p><strong>Responsable</strong><span>{responsibleLabel(viewBooking)}</span></p>
-      <p><strong>Parentesco</strong><span>{responsibleRelationshipLabel(viewBooking)}</span></p>
-      <p><strong>Teléfono</strong><span>{viewBooking.phone || "No informado"}</span></p>
-      <p><strong>Email</strong><span>{viewBooking.email || "No informado"}</span></p>
-    </article>
-
-    <article className="detail-card">
-      <h4><FaSchool />Perfil académico</h4>
-      <p><strong>Institución</strong><span>{viewBooking.school || "No especificada"}</span></p>
-      <p><strong>Nivel</strong><span>{viewBooking.educationLevel || "Sin dato"}</span></p>
-      <p><strong>Año / grado</strong><span>{viewBooking.yearGrade || "Sin dato"}</span></p>
-      <p><strong>Materia</strong><span>{viewBooking.subject || "Sin materia"}</span></p>
-    </article>
-  </div>
-
-  <article className="detail-card full">
-    <h4><FaCalendarAlt />Turno agendado</h4>
-    <p><strong>Fecha</strong><span>{viewBooking.timeSlot ? formatDate(toDate(viewBooking.timeSlot)) : "No disponible"}</span></p>
-    <p><strong>Horario</strong><span>{viewBooking.timeSlot ? `${formatTime(toDate(viewBooking.timeSlot))} hs` : "--"}</span></p>
-      <p><strong>Duración</strong><span>{viewBooking.duration || 1} hora(s)</span></p>
-    <p><strong>Valor</strong><span>{money(viewBooking.price || 0)}</span></p>
-  </article>
-
-  <article className="detail-card full note">
-    <h4><FaLightbulb />Contexto del alumno</h4>
-    <p className="stacked">{viewBooking.academicSituation || "No dejó comentarios adicionales en el momento de reservar."}</p>
-  </article>
-
-  <article className="detail-card full">
-    <h4><FaChartLine /> Evolución Pedagógica</h4>
-    <p className="stacked">{viewBooking.studentEvolution || "Sin registros de evolución aún."}</p>
-  </article>
-
-  <article className="detail-card full">
-    <h4><FaUserTie /> Estado Emocional y Actitudinal</h4>
-    <p className="stacked">{viewBooking.emotionalState || "Sin registros sobre el estado emocional."}</p>
-  </article>
-
-  {viewBooking.notes && (
-    <article className="detail-card full private">
-      <h4><FaLock />Notas privadas</h4>
-      <p className="stacked">{viewBooking.notes}</p>
-    </article>
-  )}
-</div>
-
-            <div className="admin-modal-footer">
-              <button type="button" className="admin-secondary-btn" onClick={() => setViewBooking(null)}>
-                Cerrar
-              </button>
-              <button type="button" className="admin-primary-btn slim" onClick={() => sendWhatsApp(viewBooking)}>
-                <FaWhatsapp />
-                Contactar
-              </button>
-            </div>
-          </div>
-        </div>
+        <BookingDetailModal
+          booking={viewBooking}
+          onClose={() => setViewBooking(null)}
+          onContactWhatsApp={sendWhatsApp}
+        />
       )}
     </div>
   );
