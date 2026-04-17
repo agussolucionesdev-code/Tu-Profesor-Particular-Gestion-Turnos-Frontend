@@ -69,7 +69,7 @@ const RescheduleModal = ({ editingBooking, onClose, onSuccess, showToast }) => {
           voiceOptions: PORTAL_VOICE_OPTIONS,
         });
       });
-  }, []);
+  }, [editingBooking._id, showToast]);
 
   const newEndDate = new Date(
     newDate.getTime() + Number(newDuration || 0) * 60 * 60 * 1000,

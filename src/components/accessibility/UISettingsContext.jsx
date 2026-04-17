@@ -5,7 +5,7 @@ const THEME_STORAGE_KEY = "theme";
 const ACCESSIBILITY_STORAGE_KEY = "ui_accessibility_preferences";
 
 const DEFAULT_PREFERENCES = {
-  themePreference: "system",
+  themePreference: "light",
   fontScale: "default",
   contrast: "default",
   fontFamily: "brand",

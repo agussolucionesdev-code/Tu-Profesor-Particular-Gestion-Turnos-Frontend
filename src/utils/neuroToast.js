@@ -13,10 +13,11 @@ const DEFAULT_TOAST_STATE = {
 };
 
 const DEFAULT_VOICE_BY_TYPE = {
-  success: "Listo, quedó todo en orden. Podés respirar tranquilo: el paso importante ya está resuelto.",
-  error: "Algo no pudo completarse ahora. Lo revisamos con calma; no tenés que empezar de cero.",
-  warning: "Pausa breve. Hay un detalle para mirar antes de avanzar, así cuidamos que la reserva quede bien.",
-  info: "Te acompaño con una guía breve, clara y sin apuro para que avances con seguridad.",
+  success: "Listo, quedó todo en orden. Podés seguir tranquilo.",
+  error:
+    "Algo no pudo completarse ahora. Lo revisamos con calma; no tenés que empezar de cero.",
+  warning: "Pausa breve. Hay un detalle para mirar antes de avanzar.",
+  info: "Te acompaño con una guía breve, clara y sin apuro.",
 };
 
 const FRIENDLY_TECHNICAL_MESSAGE =
@@ -62,9 +63,9 @@ const speakNow = (text, options = {}) => {
 
   const utterance = new SpeechSynthesisUtterance(message);
   utterance.lang = options.lang || "es-AR";
-  utterance.rate = options.rate ?? 0.9;
-  utterance.pitch = options.pitch ?? 1.04;
-  utterance.volume = options.volume ?? 1;
+  utterance.rate = options.rate ?? 0.86;
+  utterance.pitch = options.pitch ?? 0.98;
+  utterance.volume = options.volume ?? 0.92;
 
   const preferredVoice = resolvePreferredVoice(speechApi);
   if (preferredVoice) {
@@ -102,12 +103,12 @@ export const spellCodeForVoice = (code) =>
     .trim();
 
 export const isVoiceMuted = () => {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") return true;
 
   try {
-    return window.localStorage.getItem(VOICE_STORAGE_KEY) === "true";
+    return window.localStorage.getItem(VOICE_STORAGE_KEY) !== "false";
   } catch {
-    return false;
+    return true;
   }
 };
 

@@ -136,30 +136,9 @@ const BookingForm = () => {
   const textareaRef = useRef(null);
   const prevUnlockedAcademicRef = useRef(false);
   const prevUnlockedCommentsRef = useRef(false);
-  const stepSoundRef = useRef(
-    new Audio(
-      "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-    ),
-  );
-  const successSoundRef = useRef(
-    new Audio(
-      "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
-    ),
-  );
-  const unlockSoundRef = useRef(
-    new Audio(
-      "https://assets.mixkit.co/active_storage/sfx/2997/2997-preview.mp3",
-    ),
-  );
 
-  const playStepSound = () => {
-    stepSoundRef.current.currentTime = 0;
-    stepSoundRef.current.play().catch(() => {});
-  };
-  const playUnlockSound = () => {
-    unlockSoundRef.current.currentTime = 0;
-    unlockSoundRef.current.play().catch(() => {});
-  };
+  const playStepSound = () => {};
+  const playUnlockSound = () => {};
 
   const syncSliderHeight = useCallback(() => {
     const activePanel = slideRefs.current[currentStep];
@@ -417,7 +396,7 @@ const BookingForm = () => {
     const isActive = currentStep === stepId;
     return {
       "aria-hidden": !isActive,
-      inert: isActive ? undefined : "",
+      inert: !isActive,
     };
   };
   const stepperFlowCopy = nextStepInfo
@@ -854,9 +833,6 @@ const BookingForm = () => {
         tutorName: "Agustin",
       });
 
-      successSoundRef.current.currentTime = 0;
-      successSoundRef.current.play().catch(() => {});
-
       const end = addMinutes(dateObj, Number(formData.duration) * 60);
       const bookingCode = response.data.data.bookingCode;
       const managementMethods = [
@@ -1263,7 +1239,6 @@ const BookingForm = () => {
                 getYearGradeOptions={getYearGradeOptions}
                 goToNext={goToNext}
               />
-
             </div>
 
             {/* =======================================
@@ -1292,7 +1267,6 @@ const BookingForm = () => {
                 renderCalendarHeader={renderCalendarHeader}
                 getDayClassName={getDayClassName}
               />
-
             </div>
 
             {/* =======================================
@@ -1317,10 +1291,11 @@ const BookingForm = () => {
                 nextFreeSlot={nextFreeSlot}
                 handleTimeSelect={handleTimeSelect}
                 clearTimeSelection={clearTimeSelection}
-                handleProceedToConfirmationStep={handleProceedToConfirmationStep}
+                handleProceedToConfirmationStep={
+                  handleProceedToConfirmationStep
+                }
                 goToPrev={goToPrev}
               />
-
             </div>
 
             {/* =======================================
@@ -1351,7 +1326,6 @@ const BookingForm = () => {
                 goToPrev={goToPrev}
                 loading={loading}
               />
-
             </div>
           </div>
         </div>

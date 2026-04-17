@@ -1177,3 +1177,178 @@ body {
     font-size: max(var(--font-size-eyebrow), 0.82rem);
   }
 }
+
+/* ========================================================================== */
+/* Minimal brand polish - menos ruido visual, más claridad docente            */
+/* ========================================================================== */
+
+:root {
+  --brand-blue: #204060;
+  --brand-blue-strong: #183858;
+  --brand-green-action: #4f8f5a;
+  --brand-green-soft: #edf6ee;
+  --brand-page: #f6f8fb;
+  --brand-surface: #ffffff;
+  --brand-surface-soft: #f9fbfd;
+  --brand-border: #d8e2ea;
+  --brand-text: #17324d;
+  --brand-muted: #5d7184;
+  --brand-danger: #b42318;
+  --shadow-soft-brand: 0 10px 28px rgba(24, 56, 88, 0.08);
+}
+
+[data-theme="dark"] {
+  --brand-page: #111820;
+  --brand-surface: #17222d;
+  --brand-surface-soft: #1c2a36;
+  --brand-border: rgba(205, 220, 232, 0.18);
+  --brand-text: #f2f7fb;
+  --brand-muted: #b9c7d3;
+  --shadow-soft-brand: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+body,
+.booking-page-wrapper,
+.client-portal-wrapper,
+.admin-panel-shell,
+.footer-elite {
+  background: var(--brand-page);
+  color: var(--brand-text);
+}
+
+.booking-page-wrapper::before,
+.booking-page-wrapper::after,
+.client-portal-wrapper::before,
+.client-portal-wrapper::after,
+.footer-ambient-glow,
+.navbar-brand-halo {
+  opacity: 0.16;
+  filter: blur(18px);
+}
+
+.form-card-elevation,
+.client-portal-wrapper .portal-card,
+.client-portal-wrapper .ticket-card,
+.admin-card,
+.admin-sidebar-card,
+.admin-kpi-card,
+.admin-login-card,
+.success-modal-card,
+.footer-grid-container,
+.footer-bottom-panel {
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  box-shadow: var(--shadow-soft-brand);
+}
+
+.support-pill,
+.journey-mini-chip,
+.journey-next-pill,
+.step-status-pill,
+.status-pill,
+.value-tag,
+.success-management-pill {
+  background: var(--brand-surface-soft);
+  border: 1px solid var(--brand-border);
+  box-shadow: none;
+}
+
+.admin-primary-btn,
+.btn-submit,
+.btn-search,
+.btn-copy-code.prominent,
+.nav-link-btn.active,
+.admin-whatsapp-btn,
+.inline-action.success,
+.icon-action.success {
+  background: var(--brand-green-action);
+  color: #ffffff;
+  border-color: var(--brand-green-action);
+}
+
+.admin-secondary-btn,
+.manage-booking-link,
+.btn-secondary,
+.inline-link-btn,
+.nav-utility-btn,
+.menu-toggle-icon {
+  background: var(--brand-surface);
+  color: var(--brand-blue);
+  border: 1px solid var(--brand-border);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  min-height: 44px;
+}
+
+input,
+select,
+textarea,
+.neuro-input-wrapper,
+.premium-input {
+  border-color: var(--brand-border);
+  box-shadow: none;
+}
+
+button,
+.nav-link-btn,
+.nav-utility-btn,
+.admin-primary-btn,
+.admin-secondary-btn,
+.admin-danger-btn,
+.btn-search,
+.btn-submit,
+.btn-copy-code,
+.contact-card {
+  border-radius: 8px;
+}
+
+.form-slide-panel[aria-hidden="true"] {
+  visibility: hidden;
+}
+
+.form-slide-panel.active-panel {
+  visibility: visible;
+}
+
+.admin-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid rgba(180, 35, 24, 0.24);
+  border-radius: 8px;
+  background: rgba(180, 35, 24, 0.06);
+}
+
+.admin-danger-zone strong {
+  display: block;
+  color: var(--brand-danger);
+  margin-bottom: 0.2rem;
+}
+
+.admin-danger-zone p {
+  margin: 0;
+  color: var(--brand-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.55;
+}
+
+@media (max-width: 720px) {
+  .admin-danger-zone {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+[data-motion="reduced"] *,
+[data-calm-ui="true"] * {
+  animation-duration: 0.01ms !important;
+  transition-duration: 120ms !important;
+}

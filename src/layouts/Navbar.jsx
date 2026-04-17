@@ -24,9 +24,9 @@ import "./Navbar.css";
 const VOICE_HINT_KEY = "voice_hint_seen";
 const VOICE_MUTED_EVENT = "neuro-voice-muted-changed";
 const NAVBAR_VOICE_OPTIONS = {
-  rate: 0.9,
-  pitch: 1.05,
-  volume: 1,
+  rate: 0.86,
+  pitch: 0.98,
+  volume: 0.9,
 };
 
 const Navbar = () => {
@@ -160,7 +160,7 @@ const Navbar = () => {
     if (!nextMuted) {
       primeVoicePlayback({
         message:
-          "Guía por voz activada. Te voy a acompañar con mensajes suaves, claros y breves para que reserves o gestiones tu turno con tranquilidad.",
+          "Guía por voz activada. Te acompaño con mensajes suaves, claros y breves para que reserves o gestiones tu turno con tranquilidad.",
         voiceOptions: NAVBAR_VOICE_OPTIONS,
       });
       return;
