@@ -134,7 +134,7 @@ const BookingSuccessModal = ({
                   <span className="success-code-kicker">Código de gestión</span>
                   <h3>{successData?.bookingCode}</h3>
                   <p>
-                    Guárdalo tal cual aparece. En <strong>Mis Turnos</strong>{" "}
+                    Guardalo tal cual aparece. En <strong>Mis Turnos</strong>{" "}
                     podés usar este código para revisar, reprogramar o
                     cancelar la reserva sin fricción.
                   </p>

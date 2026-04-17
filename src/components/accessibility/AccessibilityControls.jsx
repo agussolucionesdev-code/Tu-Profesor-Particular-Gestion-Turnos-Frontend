@@ -34,7 +34,7 @@ const accentOptions = [
 
 const countActivePreferences = (preferences) =>
   [
-    preferences.themePreference !== "system",
+    preferences.themePreference !== "light",
     preferences.fontScale !== "default",
     preferences.contrast !== "default",
     preferences.fontFamily !== "brand",

@@ -7,7 +7,6 @@ import {
   startTransition,
 } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -21,29 +20,20 @@ import {
 } from "date-fns";
 import es from "date-fns/locale/es";
 import {
-  FaUserGraduate,
-  FaEnvelope,
   FaWhatsapp,
   FaCalendarAlt,
   FaClock,
-  FaBookOpen,
   FaCheckCircle,
   FaInfoCircle,
   FaExclamationCircle,
-  FaSchool,
-  FaLayerGroup,
-  FaSortNumericDown,
   FaLightbulb,
   FaCalendarCheck,
   FaArrowRight,
   FaArrowLeft,
   FaHourglassHalf,
-  FaUserCheck,
   FaShieldAlt,
   FaTicketAlt,
   FaTimesCircle,
-  FaIdCard,
-  FaGraduationCap,
   FaUserLock,
   FaChevronLeft,
   FaChevronRight,
@@ -52,18 +42,24 @@ import {
 } from "react-icons/fa";
 import BookingConfirmationSummary from "./booking/BookingConfirmationSummary";
 import BookingSuccessModal from "./booking/BookingSuccessModal";
-import { BOOKING_SUPPORT_PILLS, WIZARD_STEPS } from "../constants/bookingWizard";
+import PersonalInfoStep from "./booking/steps/PersonalInfoStep";
+import AcademicInfoStep from "./booking/steps/AcademicInfoStep";
+import DateSelectionStep from "./booking/steps/DateSelectionStep";
+import TimeSelectionStep from "./booking/steps/TimeSelectionStep";
+import ConfirmationStep from "./booking/steps/ConfirmationStep";
+import { fetchAvailability, createBooking } from "../api/bookingApi";
+import { useBookingWizard } from "../hooks/useBookingWizard";
+import {
+  BOOKING_SUPPORT_PILLS,
+  WIZARD_STEPS,
+} from "../constants/bookingWizard";
 import {
   ADULT_RELATIONSHIP_VALUE,
   formatDurationOptionLabel,
   formatDurationVoiceLabel,
-  formatPhoneMaskAr,
   formatResponsibleRelationshipLabel,
   getBookingApiMessage,
-  RESPONSIBLE_RELATIONSHIP_OPTIONS,
   RESPONSIBLE_RELATIONSHIP_OTHER_VALUE,
-  sanitizePersonNameAr,
-  sanitizeRelationshipOtherAr,
 } from "../utils/bookingFormatters";
 import {
   primeVoicePlayback,
@@ -79,21 +75,10 @@ import "../styles/accessibility-system.css";
 
 registerLocale("es", es);
 
-// --- SONIDOS UX ---
-const stepSound = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-);
-const successSound = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
-);
-const unlockSound = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/2997/2997-preview.mp3",
-);
-
 const STEP_VOICE_OPTIONS = {
-  rate: 0.9,
-  pitch: 1.05,
-  volume: 1,
+  rate: 0.86,
+  pitch: 0.98,
+  volume: 0.9,
 };
 
 const STEP_VOICE_GUIDANCE = {
@@ -104,35 +89,39 @@ const STEP_VOICE_GUIDANCE = {
 };
 
 const BookingForm = () => {
-  const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4100";
   const supportPillIcons = [FaCheckCircle, FaWhatsapp, FaUserLock];
   const sliderWindowRef = useRef(null);
   const slideRefs = useRef({});
 
   const [currentStep, setCurrentStep] = useState(1);
   const [slideDirection, setSlideDirection] = useState("forward");
-  const [isAdult, setIsAdult] = useState(false);
-  const [formData, setFormData] = useState({
-    responsibleName: "",
-    responsibleRelationship: "",
-    responsibleRelationshipOther: "",
-    studentName: "",
-    email: "",
-    phone: "",
-    school: "",
-    educationLevel: "",
-    yearGrade: "",
-    subject: "",
-    academicSituation: "",
-    timeSlot: null,
-    duration: "",
-  });
 
   const [loading, setLoading] = useState(false);
   const [existingBookings, setExistingBookings] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const { toast, showToast } = useNeuroToast({ duration: 4500 });
+
+  const {
+    formData,
+    setFormData,
+    isAdult,
+    hasAttemptedNext,
+    setHasAttemptedNext,
+    hasUnlockedAcademic,
+    hasUnlockedComments,
+    isValidField,
+    isPersonalInfoComplete,
+    isAcademicInfoComplete,
+    canProceedToStep2,
+    handleChange,
+    toggleAdultMode,
+    resetForm,
+    getFieldStateClass,
+    completionPercent,
+    requiredChecks,
+  } = useBookingWizard(showToast);
+
   const [availableSlots, setAvailableSlots] = useState([]);
   const [sliderHeight, setSliderHeight] = useState(0);
   const [isDesktopCalendarViewport, setIsDesktopCalendarViewport] = useState(
@@ -143,21 +132,13 @@ const BookingForm = () => {
   );
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
 
-  const [hasAttemptedNext, setHasAttemptedNext] = useState(false);
-
   const formCardRef = useRef(null);
   const textareaRef = useRef(null);
-  const [hasUnlockedAcademic, setHasUnlockedAcademic] = useState(false);
-  const [hasUnlockedComments, setHasUnlockedComments] = useState(false);
+  const prevUnlockedAcademicRef = useRef(false);
+  const prevUnlockedCommentsRef = useRef(false);
 
-  const playStepSound = () => {
-    stepSound.volume = 0.15;
-    stepSound.play().catch(() => {});
-  };
-  const playUnlockSound = () => {
-    unlockSound.volume = 0.3;
-    unlockSound.play().catch(() => {});
-  };
+  const playStepSound = () => {};
+  const playUnlockSound = () => {};
 
   const syncSliderHeight = useCallback(() => {
     const activePanel = slideRefs.current[currentStep];
@@ -178,9 +159,8 @@ const BookingForm = () => {
 
       window.setTimeout(() => {
         const navHeight =
-          document
-            .querySelector(".navbar-elite")
-            ?.getBoundingClientRect().height ?? 0;
+          document.querySelector(".navbar-elite")?.getBoundingClientRect()
+            .height ?? 0;
         const activePanel = slideRefs.current[targetStep];
         const scrollAnchor =
           (selector ? activePanel?.querySelector(selector) : null) ||
@@ -207,7 +187,9 @@ const BookingForm = () => {
 
         // Guide Focus: Focus the first invalid or first empty field in the step
         if (targetStep === 1) {
-          const firstField = activePanel.querySelector("input, select, textarea");
+          const firstField = activePanel.querySelector(
+            "input, select, textarea",
+          );
           firstField?.focus({ preventScroll: true });
         }
       }, delay);
@@ -300,7 +282,10 @@ const BookingForm = () => {
   }, [formData.academicSituation]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return undefined;
     }
 
@@ -324,7 +309,8 @@ const BookingForm = () => {
 
     const originalOverflow = document.body.style.overflow;
     const originalPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
 
     document.body.style.overflow = "hidden";
     if (scrollbarWidth > 0) {
@@ -349,17 +335,17 @@ const BookingForm = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/bookings/availability`);
+        const res = await fetchAvailability();
         setExistingBookings(
           res.data.data.filter((b) => b.status !== "Cancelado"),
         );
       } catch (error) {
         console.error("Error fetching bookings", error);
-        showToast(getBookingApiMessage(error, API_URL), "warning");
+        showToast(getBookingApiMessage(error), "warning");
       }
     };
     fetchBookings();
-  }, [API_URL, showToast]);
+  }, [showToast]);
 
   useEffect(() => {
     if (!formData.timeSlot) return;
@@ -396,54 +382,6 @@ const BookingForm = () => {
     setAvailableSlots(slots);
   }, [formData.timeSlot, existingBookings]);
 
-  const isValidField = (field) => {
-    const regexName = /^[A-Za-zÀ-ÿ\u00f1\u00d1\s']{3,60}$/;
-    const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    switch (field) {
-      case "studentName":
-        return (
-          formData.studentName.trim().length > 0 &&
-          regexName.test(formData.studentName.trim())
-        );
-      case "responsibleName":
-        return (
-          formData.responsibleName.trim().length > 0 &&
-          regexName.test(formData.responsibleName.trim())
-        );
-      case "responsibleRelationship":
-        return isAdult
-          ? true
-          : RESPONSIBLE_RELATIONSHIP_OPTIONS.some(
-              (option) => option.value === formData.responsibleRelationship,
-            );
-      case "responsibleRelationshipOther":
-        return formData.responsibleRelationship !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
-          ? true
-          : regexName.test(formData.responsibleRelationshipOther.trim());
-      case "email":
-        return (
-          formData.email.trim().length > 0 &&
-          regexEmail.test(formData.email.trim())
-        );
-      case "phone":
-        return formData.phone.replace(/\D/g, "").length === 13;
-      case "educationLevel":
-        return formData.educationLevel !== "";
-      case "yearGrade":
-        return formData.yearGrade.trim().length > 0;
-      case "subject":
-        return formData.subject.trim().length > 0;
-      case "school":
-        return formData.school.trim().length > 0;
-      case "academicSituation":
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  const isEmailValidOrEmpty =
-    formData.email.trim() === "" || isValidField("email");
   const adultModeLocked =
     !isAdult &&
     [
@@ -451,23 +389,16 @@ const BookingForm = () => {
       formData.responsibleRelationship,
       formData.responsibleRelationshipOther,
     ].some((value) => String(value ?? "").trim().length > 0);
-  const isPersonalInfoComplete =
-    isValidField("studentName") &&
-    isValidField("phone") &&
-    (isAdult
-      ? true
-      : isValidField("responsibleName") &&
-        isValidField("responsibleRelationship") &&
-        isValidField("responsibleRelationshipOther")) &&
-    isEmailValidOrEmpty;
-  const isAcademicInfoComplete =
-    isValidField("educationLevel") &&
-    isValidField("yearGrade") &&
-    isValidField("subject") &&
-    isValidField("school");
-  const canProceedToStep2 = isPersonalInfoComplete && isAcademicInfoComplete;
+  const completedRequiredFields = requiredChecks.filter(Boolean).length;
   const currentStepInfo = WIZARD_STEPS.find((step) => step.id === currentStep);
   const nextStepInfo = WIZARD_STEPS.find((step) => step.id === currentStep + 1);
+  const getSlidePanelA11y = (stepId) => {
+    const isActive = currentStep === stepId;
+    return {
+      "aria-hidden": !isActive,
+      inert: !isActive,
+    };
+  };
   const stepperFlowCopy = nextStepInfo
     ? `Completá este tramo y enseguida seguimos con ${nextStepInfo.label.toLowerCase()}.`
     : "Ya estás en el cierre final: revisá el resumen y confirmá tu reserva.";
@@ -477,20 +408,6 @@ const BookingForm = () => {
       : "Vamos habilitando cada paso en orden para que la reserva quede clara, prolija y sin errores.";
   const isTimeSelected = Boolean(
     formData.timeSlot && formData.timeSlot.getHours() !== 0,
-  );
-  const requiredChecks = [
-    isValidField("studentName"),
-    isValidField("phone"),
-    isAdult ? true : isValidField("responsibleName"),
-    isAdult ? true : isValidField("responsibleRelationship"),
-    isValidField("educationLevel"),
-    isValidField("yearGrade"),
-    isValidField("subject"),
-    isValidField("school"),
-  ];
-  const completedRequiredFields = requiredChecks.filter(Boolean).length;
-  const completionPercent = Math.round(
-    (completedRequiredFields / requiredChecks.length) * 100,
   );
   const stepProgressWidth =
     ((currentStep - 1) / Math.max(WIZARD_STEPS.length - 1, 1)) * 100;
@@ -512,7 +429,10 @@ const BookingForm = () => {
             : "--:--"
         } hs`
       : "";
-  const confirmationEducationLabel = [formData.educationLevel, formData.yearGrade]
+  const confirmationEducationLabel = [
+    formData.educationLevel,
+    formData.yearGrade,
+  ]
     .filter(Boolean)
     .join(" - ");
   const confirmationLookupHint =
@@ -523,111 +443,20 @@ const BookingForm = () => {
   );
   const isConfirmationReady = Number(formData.duration) >= 0.5;
 
-  const getFieldStateClass = (field, isOptional = false) => {
-    if (isValidField(field)) return "is-valid";
-    if (isOptional && formData[field]?.trim() === "") return "";
-    const value = String(formData[field] ?? "").trim();
-    const hasStartedTyping =
-      field === "phone" ? formData.phone.replace(/\D/g, "").length >= 4 : value.length > 0;
-    return hasAttemptedNext || hasStartedTyping ? "error" : "";
-  };
+  // Play unlock sound when the hook reports a new unlock transition
+  useEffect(() => {
+    if (hasUnlockedAcademic && !prevUnlockedAcademicRef.current) {
+      playUnlockSound();
+    }
+    prevUnlockedAcademicRef.current = hasUnlockedAcademic;
+  }, [hasUnlockedAcademic]);
 
   useEffect(() => {
-    if (isPersonalInfoComplete && !hasUnlockedAcademic) {
+    if (hasUnlockedComments && !prevUnlockedCommentsRef.current) {
       playUnlockSound();
-      setHasUnlockedAcademic(true);
-    } else if (!isPersonalInfoComplete && hasUnlockedAcademic)
-      setHasUnlockedAcademic(false);
-  }, [isPersonalInfoComplete, hasUnlockedAcademic]);
-
-  useEffect(() => {
-    if (isAcademicInfoComplete && !hasUnlockedComments) {
-      playUnlockSound();
-      setHasUnlockedComments(true);
-    } else if (!isAcademicInfoComplete && hasUnlockedComments)
-      setHasUnlockedComments(false);
-  }, [isAcademicInfoComplete, hasUnlockedComments]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    let finalValue = value;
-    if (name === "studentName" || name === "responsibleName") {
-      finalValue = sanitizePersonNameAr(value);
     }
-    if (name === "responsibleRelationshipOther") {
-      finalValue = sanitizeRelationshipOtherAr(value);
-    }
-    if (name === "phone") finalValue = formatPhoneMaskAr(value);
-    if (name === "email") finalValue = value.trimStart().toLowerCase();
-    setFormData((prev) => {
-      const newData = { ...prev, [name]: finalValue };
-      if (name === "educationLevel") newData.yearGrade = "";
-      if (name === "responsibleRelationship" && value !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE) {
-        newData.responsibleRelationshipOther = "";
-      }
-      return newData;
-    });
-
-    // --- Invisible Guide Logic ---
-    // If the current field just became valid, guide the user to the next one
-    if (isValidField(name)) {
-      const fieldsOrder = [
-        "studentName",
-        "phone",
-        "responsibleName",
-        "responsibleRelationship",
-        "responsibleRelationshipOther",
-        "email",
-        "educationLevel",
-        "yearGrade",
-        "subject",
-        "school",
-      ];
-      const currentIndex = fieldsOrder.indexOf(name);
-      if (currentIndex !== -1 && currentIndex < fieldsOrder.length - 1) {
-        const nextField = fieldsOrder[currentIndex + 1];
-        // Only guide if it's the same step and the next field is not yet valid
-        if (currentStep === 1 && !isValidField(nextField)) {
-           const nextInput = document.getElementsByName(nextField)[0];
-           if (nextInput) {
-             nextInput.focus({ preventScroll: true });
-             smoothScrollToStep(currentStep, {
-               selector: `[name="${nextField}"]`,
-               delay: 100,
-             });
-           }
-        }
-      }
-    }
-  };
-
-  const toggleAdultMode = () => {
-    if (adultModeLocked) {
-      showToast(
-        "Para pasar a alumno mayor de edad, primero limpia los datos del adulto responsable.",
-        "info",
-        {
-          title: "Opción momentáneamente bloqueada",
-          speak:
-            "Si quieres pasar a alumno mayor de edad, primero quita los datos del adulto responsable que ya cargaste.",
-        },
-      );
-      return;
-    }
-
-    setIsAdult((current) => {
-      const next = !current;
-      if (next) {
-        setFormData((prev) => ({
-          ...prev,
-          responsibleName: "",
-          responsibleRelationship: "",
-          responsibleRelationshipOther: "",
-        }));
-      }
-      return next;
-    });
-  };
+    prevUnlockedCommentsRef.current = hasUnlockedComments;
+  }, [hasUnlockedComments]);
 
   const getYearGradeOptions = () => {
     const level = formData.educationLevel;
@@ -931,7 +760,9 @@ const BookingForm = () => {
     return sections
       .map((section) => ({
         ...section,
-        slots: availableSlots.filter((slot) => section.match(slot.timeObj.getHours())),
+        slots: availableSlots.filter((slot) =>
+          section.match(slot.timeObj.getHours()),
+        ),
       }))
       .filter((section) => section.slots.length > 0);
   }, [availableSlots]);
@@ -948,7 +779,7 @@ const BookingForm = () => {
     if (formData.duration !== "" && formData.duration > maxAllowedDuration) {
       setFormData((prev) => ({ ...prev, duration: maxAllowedDuration }));
     }
-  }, [maxAllowedDuration, formData.timeSlot, formData.duration]);
+  }, [maxAllowedDuration, formData.timeSlot, formData.duration, setFormData]);
 
   const handleDurationSelect = (duration) => {
     if (duration > maxAllowedDuration) {
@@ -967,24 +798,8 @@ const BookingForm = () => {
 
   const resetFormAfterSuccess = () => {
     setShowModal(false);
-    setFormData({
-      responsibleName: "",
-      responsibleRelationship: "",
-      responsibleRelationshipOther: "",
-      studentName: "",
-      email: "",
-      phone: "",
-      school: "",
-      educationLevel: "",
-      yearGrade: "",
-      subject: "",
-      academicSituation: "",
-      timeSlot: null,
-      duration: "",
-    });
-    setIsAdult(false);
+    resetForm();
     setCurrentStep(1);
-    setHasAttemptedNext(false);
   };
 
   const handleSubmit = async (e) => {
@@ -1004,9 +819,10 @@ const BookingForm = () => {
         finalResponsibleRelationship === RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
           ? formData.responsibleRelationshipOther.trim()
           : "";
-      const safeEmail = formData.email.trim() !== "" ? formData.email.trim() : "";
+      const safeEmail =
+        formData.email.trim() !== "" ? formData.email.trim() : "";
 
-      const response = await axios.post(`${API_URL}/api/bookings/reserve`, {
+      const response = await createBooking({
         ...formData,
         email: safeEmail,
         responsibleName: finalResponsibleName,
@@ -1016,8 +832,6 @@ const BookingForm = () => {
         duration: Number(formData.duration),
         tutorName: "Agustin",
       });
-
-      successSound.play().catch(() => {});
 
       const end = addMinutes(dateObj, Number(formData.duration) * 60);
       const bookingCode = response.data.data.bookingCode;
@@ -1079,7 +893,7 @@ const BookingForm = () => {
       );
     } catch (error) {
       console.log("Error al reservar:", error);
-      showToast(getBookingApiMessage(error, API_URL), "error");
+      showToast(getBookingApiMessage(error), "error");
     } finally {
       setLoading(false);
     }
@@ -1090,11 +904,15 @@ const BookingForm = () => {
     primeVoicePlayback();
     try {
       await navigator.clipboard.writeText(successData.bookingCode);
-      showToast("Código copiado. Ya podés guardarlo o compartirlo.", "success", {
-        title: "Código listo",
-        detail: "Lo vas a usar después en Mis Turnos.",
-        speak: `Código ${spellCodeForVoice(successData.bookingCode)} copiado. Ya podés guardarlo con tranquilidad para gestionar el turno después.`,
-      });
+      showToast(
+        "Código copiado. Ya podés guardarlo o compartirlo.",
+        "success",
+        {
+          title: "Código listo",
+          detail: "Lo vas a usar después en Mis Turnos.",
+          speak: `Código ${spellCodeForVoice(successData.bookingCode)} copiado. Ya podés guardarlo con tranquilidad para gestionar el turno después.`,
+        },
+      );
     } catch {
       showToast(
         "No pude copiarlo automáticamente. Seleccionalo manualmente.",
@@ -1210,7 +1028,10 @@ const BookingForm = () => {
           <p className="form-subtitle">
             Completá tus datos y elegí el momento ideal para aprender.
           </p>
-          <div className="form-support-strip" aria-label="Beneficios del sistema de reserva">
+          <div
+            className="form-support-strip"
+            aria-label="Beneficios del sistema de reserva"
+          >
             {BOOKING_SUPPORT_PILLS.map((pill, index) => {
               const Icon = supportPillIcons[index];
               return (
@@ -1235,11 +1056,16 @@ const BookingForm = () => {
             <div className="journey-heading-row">
               <h3 id="journey-step-title">{currentStepInfo?.title}</h3>
               {nextStepInfo && (
-                <span className="journey-next-pill">Sigue: {nextStepInfo.label}</span>
+                <span className="journey-next-pill">
+                  Sigue: {nextStepInfo.label}
+                </span>
               )}
             </div>
             <p className="journey-one-line">{currentStepInfo?.message}</p>
-            <div className="journey-chip-row" aria-label="Claves del paso actual">
+            <div
+              className="journey-chip-row"
+              aria-label="Claves del paso actual"
+            >
               {currentStepInfo?.chips?.map((chip) => (
                 <span key={chip} className="journey-mini-chip">
                   {chip}
@@ -1247,7 +1073,10 @@ const BookingForm = () => {
               ))}
             </div>
           </div>
-          <div className="journey-meter" aria-label="Datos requeridos completos">
+          <div
+            className="journey-meter"
+            aria-label="Datos requeridos completos"
+          >
             <span>{completionPercent}%</span>
             <div className="journey-meter-track">
               <div style={{ width: `${completionPercent}%` }}></div>
@@ -1270,7 +1099,9 @@ const BookingForm = () => {
             <div className="stepper-head-copy">
               <span className="stepper-kicker">Recorrido guiado</span>
               <div className="stepper-context-row">
-                <strong className="stepper-head-title">{currentStepInfo?.label}</strong>
+                <strong className="stepper-head-title">
+                  {currentStepInfo?.label}
+                </strong>
                 <span className="stepper-current-pill">
                   {currentStep} / {WIZARD_STEPS.length}
                 </span>
@@ -1309,12 +1140,12 @@ const BookingForm = () => {
                     ? "Sigue"
                     : "Después";
               const stepHint = isCompleted
-                  ? "Tocá para volver"
-                  : isCurrent
-                    ? "Estás aquí"
-                    : isUpcoming
-                      ? "Se habilita al completar este paso"
-                      : "Aún bloqueado";
+                ? "Tocá para volver"
+                : isCurrent
+                  ? "Estás aquí"
+                  : isUpcoming
+                    ? "Se habilita al completar este paso"
+                    : "Aún bloqueado";
 
               return (
                 <button
@@ -1381,505 +1212,33 @@ const BookingForm = () => {
                 slideRefs.current[1] = element;
               }}
               className={`form-slide-panel ${currentStep === 1 ? "active-panel" : ""}`}
+              {...getSlidePanelA11y(1)}
             >
-              <div className="form-section-block">
-                <h3 className="section-title" tabIndex={-1}>
-                  <FaIdCard /> Información personal
-                </h3>
-                <div className="form-grid-2">
-                  <div className="neuro-input-group">
-                    <div className="label-row">
-                      <label>
-                        Nombre del Alumno <span className="required">*</span>
-                      </label>
-                      {hasAttemptedNext && !isValidField("studentName") && (
-                        <span className="error-text">Requerido</span>
-                      )}
-                    </div>
-                    <div
-                      className={`neuro-input-wrapper premium-input ${getFieldStateClass("studentName")}`}
-                    >
-                      <FaUserGraduate className="input-icon" />
-                      <input
-                        type="text"
-                        name="studentName"
-                        value={formData.studentName}
-                        onChange={handleChange}
-                        aria-invalid={
-                          hasAttemptedNext && !isValidField("studentName")
-                        }
-                        aria-describedby="studentName-help"
-                        placeholder="Nombre y apellido del alumno"
-                      />
-                      {isValidField("studentName") && (
-                        <FaCheckCircle className="valid-icon" />
-                      )}
-                    </div>
-                    <p id="studentName-help" className="field-helper">
-                      Escribilo como te gustaría verlo en el comprobante y en los avisos.
-                    </p>
-                  </div>
-                  <div className="neuro-input-group">
-                    <div className="label-row">
-                      <label>
-                        Número de teléfono <span className="optional">(Sin 0 ni 15)</span>{" "}
-                        <span className="required">*</span>
-                      </label>
-                      {hasAttemptedNext && !isValidField("phone") && (
-                        <span className="error-text">Requerido</span>
-                      )}
-                    </div>
-                    <div
-                      className={`neuro-input-wrapper premium-input ${getFieldStateClass("phone")}`}
-                    >
-                      <FaWhatsapp className="input-icon" />
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        inputMode="tel"
-                        aria-invalid={hasAttemptedNext && !isValidField("phone")}
-                        aria-describedby="phone-help"
-                        placeholder="+54 9 11-2222-3333"
-                      />
-                      {isValidField("phone") && (
-                        <FaCheckCircle className="valid-icon" />
-                      )}
-                    </div>
-                    <p id="phone-help" className="field-helper">
-                      Lo usamos para recordatorios, cambios y seguimiento rápido.
-                    </p>
-                  </div>
-                </div>
+              <PersonalInfoStep
+                formData={formData}
+                isAdult={isAdult}
+                adultModeLocked={adultModeLocked}
+                hasAttemptedNext={hasAttemptedNext}
+                isValidField={isValidField}
+                getFieldStateClass={getFieldStateClass}
+                handleChange={handleChange}
+                toggleAdultMode={toggleAdultMode}
+              />
 
-                <div className="adult-mode-banner">
-                  <div className="adult-mode-copy">
-                    <span className="adult-mode-kicker">Quién reserva</span>
-                    <strong>{isAdult ? "Estás reservando para vos" : "Estás reservando para un menor"}</strong>
-                    <small>
-                      {isAdult
-                        ? "Mantenemos esta opción siempre visible para que puedas cambiarla sin perderte."
-                        : "Si el turno es para un menor, pedimos un adulto responsable para acompañar el contacto."}
-                    </small>
-                  </div>
-                  <div className="neuro-toggle-animator adult-mode-toggle">
-                    <button
-                      type="button"
-                      className={`neuro-toggle-wrapper premium-input ${isAdult ? "active-box" : ""} ${adultModeLocked ? "is-disabled" : ""}`}
-                      role="switch"
-                      aria-checked={isAdult}
-                      aria-disabled={adultModeLocked}
-                      aria-label="Indicar que el alumno es mayor de edad"
-                      aria-describedby="adult-mode-help"
-                      disabled={adultModeLocked}
-                      onClick={toggleAdultMode}
-                    >
-                      <div className="toggle-text">
-                        <span className={`toggle-pill ${isAdult ? "active" : "inactive"}`}>
-                          {isAdult ? "Reserva directa" : "Con responsable"}
-                        </span>
-                        <span className="toggle-title">Soy alumno mayor de edad</span>
-                        <span className="toggle-subtitle">
-                          {isAdult
-                            ? "Usaremos tus datos como contacto principal y podés cambiarlo cuando quieras."
-                            : "Si el turno es para un menor, te pedimos un adulto responsable para acompañar el contacto."}
-                        </span>
-                      </div>
-                      <div className="toggle-control-shell" aria-hidden="true">
-                        <span
-                          className={`toggle-state-label ${
-                            adultModeLocked ? "locked" : isAdult ? "active" : ""
-                          }`}
-                        >
-                          {adultModeLocked
-                            ? "Bloqueado"
-                            : isAdult
-                              ? "Modo activo"
-                              : "Activar"}
-                        </span>
-                        <div className={`neuro-toggle ${isAdult ? "active" : ""}`}></div>
-                      </div>
-                    </button>
-                    <p id="adult-mode-help" className={`adult-mode-helper ${adultModeLocked ? "locked" : ""}`}>
-                      {adultModeLocked
-                        ? "Para volver a modo adulto, primero limpia los datos del adulto responsable."
-                        : "Podés cambiar esta opción cuando quieras antes de avanzar."}
-                    </p>
-                  </div>
-                </div>
-
-                <div className={`form-flex-adult ${isAdult ? "adult-self-mode" : ""}`}>
-                  {!isAdult ? (
-                    <>
-                      <div className="adult-field-container">
-                        <div className="neuro-input-group">
-                          <div className="label-row">
-                            <label>
-                              Adulto responsable <span className="required">*</span>
-                            </label>
-                            {hasAttemptedNext &&
-                              !isValidField("responsibleName") && (
-                                <span className="error-text">Requerido</span>
-                              )}
-                          </div>
-                          <div
-                            className={`neuro-input-wrapper premium-input ${getFieldStateClass("responsibleName")}`}
-                          >
-                            <FaUserCheck className="input-icon" />
-                            <input
-                              type="text"
-                              name="responsibleName"
-                              value={formData.responsibleName}
-                              onChange={handleChange}
-                              aria-invalid={
-                                hasAttemptedNext &&
-                                !isValidField("responsibleName")
-                              }
-                              aria-describedby="responsibleName-help"
-                              placeholder="Nombre del adulto responsable"
-                            />
-                            {isValidField("responsibleName") && (
-                              <FaCheckCircle className="valid-icon" />
-                            )}
-                          </div>
-                          <p id="responsibleName-help" className="field-helper">
-                            Puede ser madre, padre, abuelo, abuela o quien acompaña el proceso.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="adult-field-container">
-                        <div className="neuro-input-group">
-                          <div className="label-row">
-                            <label>
-                              Relación de parentesco <span className="required">*</span>
-                            </label>
-                            {hasAttemptedNext &&
-                              !isValidField("responsibleRelationship") && (
-                                <span className="error-text">Requerido</span>
-                              )}
-                          </div>
-                          <div
-                            className={`neuro-input-wrapper premium-input select-input-wrapper ${getFieldStateClass("responsibleRelationship")}`}
-                          >
-                            <FaIdCard className="input-icon" />
-                            <select
-                              name="responsibleRelationship"
-                              value={formData.responsibleRelationship}
-                              onChange={handleChange}
-                              aria-invalid={
-                                hasAttemptedNext &&
-                                !isValidField("responsibleRelationship")
-                              }
-                              aria-describedby="responsibleRelationship-help"
-                            >
-                              <option value="">Seleccioná una opción</option>
-                              {RESPONSIBLE_RELATIONSHIP_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                            {isValidField("responsibleRelationship") && (
-                              <FaCheckCircle className="valid-icon" />
-                            )}
-                          </div>
-                          <p id="responsibleRelationship-help" className="field-helper">
-                            Así sabrán, vos y el profesor, qué vínculo tiene quien está gestionando el turno.
-                          </p>
-                        </div>
-                      </div>
-
-                      {formData.responsibleRelationship === RESPONSIBLE_RELATIONSHIP_OTHER_VALUE && (
-                        <div className="adult-field-container adult-field-container-full">
-                          <div className="neuro-input-group">
-                            <div className="label-row">
-                              <label>
-                                ¿Cuál es el vínculo? <span className="required">*</span>
-                              </label>
-                              {hasAttemptedNext &&
-                                !isValidField("responsibleRelationshipOther") && (
-                                  <span className="error-text">Requerido</span>
-                                )}
-                            </div>
-                            <div
-                              className={`neuro-input-wrapper premium-input ${getFieldStateClass("responsibleRelationshipOther")}`}
-                            >
-                              <FaUserCheck className="input-icon" />
-                              <input
-                                type="text"
-                                name="responsibleRelationshipOther"
-                                value={formData.responsibleRelationshipOther}
-                                onChange={handleChange}
-                                aria-invalid={
-                                  hasAttemptedNext &&
-                                  !isValidField("responsibleRelationshipOther")
-                                }
-                                aria-describedby="responsibleRelationshipOther-help"
-                                placeholder="Ej.: Tutor legal, madrina, referente familiar"
-                              />
-                              {isValidField("responsibleRelationshipOther") && (
-                                <FaCheckCircle className="valid-icon" />
-                              )}
-                            </div>
-                            <p id="responsibleRelationshipOther-help" className="field-helper">
-                              Escribilo tal como querés que figure en el resumen, en el mail y en el panel del profesor.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="adult-state-card" role="status" aria-live="polite">
-                      <FaUserCheck />
-                      <div>
-                        <strong>Reserva directa</strong>
-                        <span>No hace falta completar un adulto responsable ni su parentesco.</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="adult-field-container">
-                    <div className="neuro-input-group" style={{ marginTop: "0" }}>
-                      <div className="label-row">
-                        <label>
-                          {isAdult ? "Email" : "Email de contacto"} <span className="optional">(Opcional)</span>
-                        </label>
-                        {hasAttemptedNext &&
-                          formData.email.trim() !== "" &&
-                          !isValidField("email") && (
-                            <span className="error-text">Inválido</span>
-                          )}
-                      </div>
-                      <div
-                        className={`neuro-input-wrapper premium-input ${getFieldStateClass("email", true)}`}
-                      >
-                        <FaEnvelope className="input-icon" />
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          aria-invalid={
-                            hasAttemptedNext &&
-                            formData.email.trim() !== "" &&
-                            !isValidField("email")
-                          }
-                          aria-describedby="email-help"
-                          placeholder="nombre@correo.com"
-                        />
-                        {formData.email.trim() !== "" && isValidField("email") && (
-                          <FaCheckCircle className="valid-icon" />
-                        )}
-                      </div>
-                      <p id="email-help" className="field-helper">
-                        {isAdult
-                          ? "Si lo completás, también te envío el código y el resumen por correo."
-                          : "Si lo dejás, el adulto responsable también recibe respaldo por correo."}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={`progressive-disclosure-grid ${isPersonalInfoComplete ? "is-active" : ""}`}
-              >
-                <div className="progressive-inner">
-                  <hr className="section-divider-soft" />
-                  <h3 className="section-title" tabIndex={-1}>
-                    <FaGraduationCap /> Perfil académico
-                  </h3>
-                  <div className="form-grid-2">
-                    <div className="neuro-input-group">
-                      <div className="label-row">
-                        <label>
-                          Nivel Educativo <span className="required">*</span>
-                        </label>
-                        {hasAttemptedNext &&
-                          !isValidField("educationLevel") && (
-                            <span className="error-text">Requerido</span>
-                          )}
-                      </div>
-                      <div
-                        className={`neuro-input-wrapper premium-input ${getFieldStateClass("educationLevel")}`}
-                      >
-                        <FaLayerGroup className="input-icon" />
-                        <select
-                          name="educationLevel"
-                          value={formData.educationLevel}
-                          onChange={handleChange}
-                          aria-invalid={
-                            hasAttemptedNext && !isValidField("educationLevel")
-                          }
-                        >
-                          <option value="">Elegí el nivel educativo</option>
-                          <option value="Primaria">Primaria</option>
-                          <option value="Secundaria">Secundaria</option>
-                          <option value="Secundaria Tecnica">
-                            Secundaria técnica
-                          </option>
-                          <option value="Terciario">Terciario / Superior</option>
-                          <option value="Universitario">Universitario</option>
-                        </select>
-                        {isValidField("educationLevel") && (
-                          <FaCheckCircle className="valid-icon select-valid" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="neuro-input-group">
-                      <div className="label-row">
-                        <label>
-                          Año / grado <span className="required">*</span>
-                        </label>
-                        {hasAttemptedNext && !isValidField("yearGrade") && (
-                          <span className="error-text">Requerido</span>
-                        )}
-                      </div>
-                      <div
-                        className={`neuro-input-wrapper premium-input ${getFieldStateClass("yearGrade")}`}
-                      >
-                        <FaSortNumericDown className="input-icon" />
-                        <select
-                          name="yearGrade"
-                          value={formData.yearGrade}
-                          onChange={handleChange}
-                          disabled={!formData.educationLevel}
-                          aria-invalid={
-                            hasAttemptedNext && !isValidField("yearGrade")
-                          }
-                        >
-                          {!formData.educationLevel && (
-                            <option value="">Elegí el nivel primero</option>
-                          )}
-                          {formData.educationLevel && (
-                            <option value="">Elegí curso, año o grado</option>
-                          )}
-                          {getYearGradeOptions().map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                        {isValidField("yearGrade") && (
-                          <FaCheckCircle className="valid-icon select-valid" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="form-grid-2">
-                    <div className="neuro-input-group">
-                      <div className="label-row">
-                        <label>
-                          Materia a Preparar <span className="required">*</span>
-                        </label>
-                        {hasAttemptedNext && !isValidField("subject") && (
-                          <span className="error-text">Requerido</span>
-                        )}
-                      </div>
-                      <div
-                        className={`neuro-input-wrapper premium-input ${getFieldStateClass("subject")}`}
-                      >
-                        <FaBookOpen className="input-icon" />
-                        <input
-                          type="text"
-                          name="subject"
-                          value={formData.subject}
-                          onChange={handleChange}
-                          aria-invalid={
-                            hasAttemptedNext && !isValidField("subject")
-                          }
-                          placeholder="Materia, tema o examen a preparar"
-                        />
-                        {isValidField("subject") && (
-                          <FaCheckCircle className="valid-icon" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="neuro-input-group">
-                      <div className="label-row">
-                        <label>
-                          Institución / colegio <span className="required">*</span>
-                        </label>
-                        {hasAttemptedNext && !isValidField("school") && (
-                          <span className="error-text">Requerido</span>
-                        )}
-                      </div>
-                      <div
-                        className={`neuro-input-wrapper premium-input ${getFieldStateClass("school")}`}
-                      >
-                        <FaSchool className="input-icon" />
-                        <input
-                          type="text"
-                          name="school"
-                          value={formData.school}
-                          onChange={handleChange}
-                          aria-invalid={
-                            hasAttemptedNext && !isValidField("school")
-                          }
-                          placeholder="Escuela, facultad o institución"
-                        />
-                        {isValidField("school") && (
-                          <FaCheckCircle className="valid-icon" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  </div>
-                </div>
-
-              <div
-                className={`progressive-disclosure-grid ${isAcademicInfoComplete ? "is-active" : ""}`}
-              >
-                <div className="progressive-inner">
-                  <div
-                    className="neuro-input-group"
-                    style={{ marginTop: "1.5rem" }}
-                  >
-                    <div className="label-row">
-                      <label>
-                        Situación / comentarios{" "}
-                        <span className="optional">
-                          (Opcional pero recomendado)
-                        </span>
-                      </label>
-                    </div>
-                    <div className="neuro-textarea-wrapper premium-input">
-                      <FaLightbulb className="input-icon" />
-                      <textarea
-                        ref={textareaRef}
-                        rows={1}
-                        name="academicSituation"
-                        value={formData.academicSituation}
-                        onChange={handleChange}
-                        placeholder={
-                          !isAdult
-                            ? "Ej: Necesita reforzar base, practicar ejercicios y llegar con más seguridad al examen."
-                            : "Ej: Quiero ordenar temas, practicar ejercicios y llegar mejor preparado al parcial."
-                        }
-                        lang="es"
-                      />
-                      {formData.academicSituation.trim().length > 0 && (
-                        <FaCheckCircle className="valid-icon" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="step-actions right-align"
-                style={{ marginTop: "2.5rem" }}
-              >
-                <button
-                  type="button"
-                  className={`btn-neuro-primary ${!canProceedToStep2 ? "btn-disabled" : "btn-ready"}`}
-                  onClick={goToNext}
-                >
-                  Continuar <FaArrowRight />
-                </button>
-              </div>
+              <AcademicInfoStep
+                formData={formData}
+                isAdult={isAdult}
+                hasAttemptedNext={hasAttemptedNext}
+                isValidField={isValidField}
+                getFieldStateClass={getFieldStateClass}
+                handleChange={handleChange}
+                isPersonalInfoComplete={isPersonalInfoComplete}
+                isAcademicInfoComplete={isAcademicInfoComplete}
+                canProceedToStep2={canProceedToStep2}
+                textareaRef={textareaRef}
+                getYearGradeOptions={getYearGradeOptions}
+                goToNext={goToNext}
+              />
             </div>
 
             {/* =======================================
@@ -1890,222 +1249,24 @@ const BookingForm = () => {
                 slideRefs.current[2] = element;
               }}
               className={`form-slide-panel ${currentStep === 2 ? "active-panel" : ""}`}
+              {...getSlidePanelA11y(2)}
             >
-              <div className="step-content-with-arrows step-content-focus">
-                <div className="calendar-focus-container relative-interaction">
-                  <div className="step-stage-shell calendar-stage-shell">
-                    <div className="step-stage-main">
-                      <div className="step-stage-heading">
-                        <div>
-                          <span className="step-stage-kicker">Paso 2 · Fecha</span>
-                          <h3 className="section-title" tabIndex={-1}>
-                            <FaCalendarAlt /> Elegí un día
-                          </h3>
-                          <p className="step-empathy-note">
-                            Si estás organizando a un menor, elegí un día que
-                            también le dé margen para descansar y llegar
-                            tranquilo.
-                          </p>
-                        </div>
-
-                        {isDesktopCalendarViewport && (
-                          <button
-                            type="button"
-                            className="calendar-zoom-button"
-                            onClick={openCalendarExpanded}
-                            aria-haspopup="dialog"
-                            aria-expanded={isCalendarExpanded}
-                          >
-                            <FaSearchPlus /> Ampliar calendario
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="calendar-toolbar-row">
-                        <div className="calendar-legend">
-                          <div className="legend-item">
-                            <span className="legend-icon disabled"></span>{" "}
-                            Ocupado
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon today"></span> Hoy
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon available"></span>{" "}
-                            Disponible
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon selected"></span>{" "}
-                            Seleccionado
-                          </div>
-                        </div>
-
-                        <span className="calendar-toolbar-helper">
-                          {selectedDayOnly
-                            ? "Fecha lista. El siguiente paso ya está preparado."
-                            : "Tocá un día para habilitar los horarios disponibles."}
-                        </span>
-                      </div>
-
-                      <div
-                        className={`calendar-selection-banner ${selectedDayOnly ? "is-active" : ""}`}
-                        role="status"
-                        aria-live="polite"
-                      >
-                        <div>
-                          <span className="calendar-selection-kicker">
-                            Selección actual
-                          </span>
-                          <strong>
-                            {selectedDayOnly
-                              ? selectedDayLabel
-                              : "Todavía no elegiste una fecha"}
-                          </strong>
-                          <p>
-                            {selectedDayOnly
-                                ? "Si la cambiás, los horarios del paso siguiente se actualizan solos."
-                                : "En pantallas grandes podés abrir la vista ampliada para verla mucho más cómoda."}
-                          </p>
-                        </div>
-
-                        {selectedDayOnly ? (
-                          <button
-                            type="button"
-                            className="btn-chip-clear"
-                            onClick={clearDateSelection}
-                            title="Quitar fecha"
-                            aria-label="Quitar fecha elegida"
-                          >
-                            <FaTimes /> Quitar selección
-                          </button>
-                        ) : (
-                          <span className="calendar-selection-tip">
-                            Paso siguiente: horarios. Si volvés a tocar la fecha elegida, la quitás.
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="calendar-glass-box calendar-rich-box">
-                        <DatePicker
-                          selected={formData.timeSlot}
-                          onChange={() => {}}
-                          onSelect={handleDateSelect}
-                          minDate={new Date()}
-                          inline
-                          locale="es"
-                          fixedHeight
-                          calendarClassName="neuro-calendar neuro-calendar-rich"
-                          dayClassName={getDayClassName}
-                          renderCustomHeader={renderCalendarHeader(1)}
-                        />
-                      </div>
-                    </div>
-
-                    <aside className="step-stage-sidebar">
-                      <div className="stage-sidebar-cards">
-                        <article className="selection-insight-card">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaCalendarCheck />
-                            </span>
-                            <span className="insight-label">Día elegido</span>
-                          </div>
-                          <strong>
-                            {selectedDayOnly
-                              ? format(selectedDayOnly, "EEEE d 'de' MMMM", {
-                                  locale: es,
-                                })
-                              : "Todavía sin fecha"}
-                          </strong>
-                          <small>
-                            {selectedDayOnly
-                                ? "La reserva ya quedó enfocada en este día."
-                                : "Primero elegí el día y después te mostramos solo horarios libres."}
-                          </small>
-                        </article>
-
-                        <article className="selection-insight-card">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaClock />
-                            </span>
-                            <span className="insight-label">Horarios libres</span>
-                          </div>
-                          <strong>
-                            {selectedDayOnly
-                              ? `${availableSlotCount} opciones`
-                              : "--"}
-                          </strong>
-                          <small>
-                            {selectedDayOnly
-                              ? availableSlotCount > 0
-                                ? "Filtramos la agenda real para que no pierdas tiempo."
-                                : "Ese día ya no tiene espacios disponibles."
-                              : "Este contador aparece apenas confirmás una fecha."}
-                          </small>
-                        </article>
-
-                        <article className="selection-insight-card accent">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaLightbulb />
-                            </span>
-                            <span className="insight-label">
-                              Primer horario libre
-                            </span>
-                          </div>
-                          <strong>
-                            {nextFreeSlot
-                              ? `${format(nextFreeSlot, "HH:mm")} hs`
-                              : "--"}
-                          </strong>
-                          <small>
-                            {nextFreeSlot
-                              ? "Ideal si querés resolver rápido sin revisar toda la grilla."
-                              : "Cuando haya cupos te lo vamos a marcar acá."}
-                          </small>
-                        </article>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={`btn-stage-next desktop-stage-cta ${selectedDayOnly ? "is-ready" : "is-locked"}`}
-                        onClick={handleProceedToTimeStep}
-                      >
-                        <span>
-                          {selectedDayOnly
-                            ? "Ver horarios disponibles"
-                            : "Elegí un día para continuar"}
-                        </span>
-                        <FaArrowRight />
-                      </button>
-
-                      <p className="stage-next-helper">
-                        {selectedDayOnly
-                          ? "Te llevamos al paso 3 con la fecha ya enfocada."
-                          : "Cuando elijas una fecha, este botón se convierte en tu acceso directo al siguiente paso."}
-                      </p>
-                    </aside>
-                  </div>
-                </div>
-              </div>
-
-              <div className="step-actions stage-actions-mobile space-between">
-                <button
-                  type="button"
-                  className="btn-neuro-secondary"
-                  onClick={goToPrev}
-                >
-                  <FaArrowLeft /> Volver a tus datos
-                </button>
-                <button
-                  type="button"
-                  className={`btn-neuro-primary ${selectedDayOnly ? "btn-ready" : "btn-disabled"}`}
-                  onClick={handleProceedToTimeStep}
-                >
-                  Horarios disponibles <FaArrowRight />
-                </button>
-              </div>
+              <DateSelectionStep
+                formData={formData}
+                selectedDayOnly={selectedDayOnly}
+                selectedDayLabel={selectedDayLabel}
+                availableSlotCount={availableSlotCount}
+                nextFreeSlot={nextFreeSlot}
+                isDesktopCalendarViewport={isDesktopCalendarViewport}
+                isCalendarExpanded={isCalendarExpanded}
+                handleDateSelect={handleDateSelect}
+                clearDateSelection={clearDateSelection}
+                handleProceedToTimeStep={handleProceedToTimeStep}
+                goToPrev={goToPrev}
+                openCalendarExpanded={openCalendarExpanded}
+                renderCalendarHeader={renderCalendarHeader}
+                getDayClassName={getDayClassName}
+              />
             </div>
 
             {/* =======================================
@@ -2116,274 +1277,25 @@ const BookingForm = () => {
                 slideRefs.current[3] = element;
               }}
               className={`form-slide-panel ${currentStep === 3 ? "active-panel" : ""}`}
+              {...getSlidePanelA11y(3)}
             >
-              <div className="step-content-with-arrows step-content-focus">
-                <div className="calendar-focus-container relative-interaction">
-                  <div className="step-stage-shell slot-stage-shell">
-                    <div className="step-stage-main">
-                      <div className="step-stage-heading">
-                        <div>
-                          <span className="step-stage-kicker">
-                            Paso 3 · Horario
-                          </span>
-                          <h3 className="section-title" tabIndex={-1}>
-                            <FaClock /> Turnos disponibles
-                          </h3>
-                          <p className="step-empathy-note">
-                            Cada botón es un horario posible. Los bloques
-                            ocupados o pasados quedan bloqueados para evitar
-                            confusiones.
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="calendar-secondary-action"
-                          onClick={goToPrev}
-                        >
-                          <FaCalendarAlt /> Cambiar fecha
-                        </button>
-                      </div>
-
-                      <div className="calendar-toolbar-row">
-                        <div className="calendar-legend">
-                          <div className="legend-item">
-                            <span className="legend-icon disabled"></span>{" "}
-                            Ocupado
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon available"></span>{" "}
-                            Disponible
-                          </div>
-                          <div className="legend-item">
-                            <span className="legend-icon selected"></span>{" "}
-                            Seleccionado
-                          </div>
-                        </div>
-
-                        <span className="calendar-toolbar-helper">
-                          {isTimeSelected
-                            ? "Horario listo. El siguiente paso es revisar y confirmar."
-                            : "Elegí una hora libre y te habilitamos la confirmación."}
-                        </span>
-                      </div>
-
-                      <div
-                        className={`calendar-selection-banner ${isTimeSelected ? "is-active" : ""}`}
-                        role="status"
-                        aria-live="polite"
-                      >
-                        <div>
-                          <span className="calendar-selection-kicker">
-                            Horario elegido
-                          </span>
-                          <strong>
-                            {isTimeSelected
-                              ? `${selectedTimeLabel} · ${selectedDayLabel}`
-                              : "Todavía no elegiste un horario"}
-                          </strong>
-                          <p>
-                            {isTimeSelected
-                                ? "Ahora solo queda revisar duración, resumen y confirmar."
-                                : "Podés tocar cualquier bloque libre para marcarlo y seguir."}
-                          </p>
-                        </div>
-
-                        {isTimeSelected ? (
-                          <button
-                            type="button"
-                            className="btn-chip-clear"
-                            onClick={clearTimeSelection}
-                            title="Quitar horario"
-                            aria-label="Quitar horario elegido"
-                          >
-                            <FaTimes /> Quitar selección
-                          </button>
-                        ) : (
-                          <span className="calendar-selection-tip">
-                            Paso siguiente: confirmar. Si volvés a tocar el bloque elegido, lo quitás.
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="calendar-glass-box panoramic slot-rich-box">
-                        <div className="slots-container">
-                          {availableSlots.length > 0 ? (
-                            <div className="slot-sections">
-                              {slotSections.map((section) => (
-                                <section key={section.id} className="slot-section">
-                                  <div className="slot-section-header">
-                                    <div>
-                                      <h4>{section.label}</h4>
-                                      <p>{section.helper}</p>
-                                    </div>
-                                    <span>
-                                      {
-                                        section.slots.filter(
-                                          (slot) => !slot.isOccupied,
-                                        ).length
-                                      }{" "}
-                                      libres
-                                    </span>
-                                  </div>
-
-                                  <div className="slots-grid">
-                                    {section.slots.map((slot, index) => {
-                                      const isSelected =
-                                        formData.timeSlot?.getTime() ===
-                                        slot.timeObj.getTime();
-                                      const slotStateLabel = slot.isOccupied
-                                        ? slot.status === "past"
-                                          ? "No disponible"
-                                          : "Ocupado"
-                                        : isSelected
-                                          ? "Elegido"
-                                          : "Libre";
-
-                                      return (
-                                        <button
-                                          key={`${section.id}-${index}`}
-                                          type="button"
-                                          disabled={slot.isOccupied}
-                                          className={`slot-btn ${slot.isOccupied ? "disabled" : ""} ${isSelected ? "selected" : ""}`}
-                                          onClick={() =>
-                                            handleTimeSelect(slot.timeObj)
-                                          }
-                                          aria-pressed={isSelected}
-                                          aria-label={`${format(slot.timeObj, "HH:mm")} ${slotStateLabel}`}
-                                        >
-                                          <span className="slot-main-label">
-                                            {format(slot.timeObj, "HH:mm")}
-                                          </span>
-                                          <span className="slot-sub-label">
-                                            {slotStateLabel}
-                                          </span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </section>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="no-slots-box">
-                              <FaTimesCircle />
-                              <p>Cargando agenda...</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <aside className="step-stage-sidebar">
-                      <div className="stage-sidebar-cards">
-                        <article className="selection-insight-card">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaCalendarCheck />
-                            </span>
-                            <span className="insight-label">Día en foco</span>
-                          </div>
-                          <strong>
-                            {selectedDayOnly
-                              ? format(selectedDayOnly, "EEEE d 'de' MMMM", {
-                                  locale: es,
-                                })
-                              : "Sin fecha"}
-                          </strong>
-                          <small>
-                            {selectedDayOnly
-                                ? "Si necesitás otro día, podés volver sin perder tus datos."
-                                : "Vuelve al paso anterior para elegir la fecha."}
-                          </small>
-                        </article>
-
-                        <article className="selection-insight-card">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaClock />
-                            </span>
-                            <span className="insight-label">
-                              Estado del horario
-                            </span>
-                          </div>
-                          <strong>
-                            {isTimeSelected
-                              ? selectedTimeLabel
-                              : nextFreeSlot
-                                ? `${format(nextFreeSlot, "HH:mm")} hs`
-                                : "--"}
-                          </strong>
-                          <small>
-                            {isTimeSelected
-                              ? "Ya puedes pasar al resumen final."
-                              : nextFreeSlot
-                                ? "Te sugerimos empezar por el primer hueco libre."
-                                : "Si este día no sirve, volvés y elegís otra fecha."}
-                          </small>
-                        </article>
-
-                        <article className="selection-insight-card accent">
-                          <div className="selection-insight-head">
-                            <span className="selection-insight-icon">
-                              <FaLightbulb />
-                            </span>
-                            <span className="insight-label">
-                              Próximo paso
-                            </span>
-                          </div>
-                          <strong>
-                            {isTimeSelected
-                              ? "Revisar y confirmar"
-                              : `${availableSlotCount} bloques libres`}
-                          </strong>
-                          <small>
-                            {isTimeSelected
-                                ? "En la última pantalla ajustás duración y revisás el resumen."
-                                : "Apenas elijas un horario libre, te habilitamos la confirmación."}
-                          </small>
-                        </article>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={`btn-stage-next desktop-stage-cta ${isTimeSelected ? "is-ready" : "is-locked"}`}
-                        onClick={handleProceedToConfirmationStep}
-                      >
-                        <span>
-                          {isTimeSelected
-                            ? "Continuar a confirmar"
-                            : "Elegí un horario para continuar"}
-                        </span>
-                        <FaArrowRight />
-                      </button>
-
-                      <p className="stage-next-helper">
-                        {isTimeSelected
-                          ? "El botón ya quedó listo para llevarte al resumen final."
-                          : "Cuando marques un horario libre, este botón se activa y te lleva al cierre de la reserva."}
-                      </p>
-                    </aside>
-                  </div>
-                </div>
-              </div>
-
-              <div className="step-actions stage-actions-mobile space-between">
-                <button
-                  type="button"
-                  className="btn-neuro-secondary"
-                  onClick={goToPrev}
-                >
-                  <FaArrowLeft /> Cambiar fecha
-                </button>
-                <button
-                  type="button"
-                  className={`btn-neuro-primary ${isTimeSelected ? "btn-ready" : "btn-disabled"}`}
-                  onClick={handleProceedToConfirmationStep}
-                >
-                  Confirmar reserva <FaArrowRight />
-                </button>
-              </div>
+              <TimeSelectionStep
+                formData={formData}
+                isTimeSelected={isTimeSelected}
+                selectedTimeLabel={selectedTimeLabel}
+                selectedDayLabel={selectedDayLabel}
+                selectedDayOnly={selectedDayOnly}
+                slotSections={slotSections}
+                availableSlots={availableSlots}
+                availableSlotCount={availableSlotCount}
+                nextFreeSlot={nextFreeSlot}
+                handleTimeSelect={handleTimeSelect}
+                clearTimeSelection={clearTimeSelection}
+                handleProceedToConfirmationStep={
+                  handleProceedToConfirmationStep
+                }
+                goToPrev={goToPrev}
+              />
             </div>
 
             {/* =======================================
@@ -2394,229 +1306,26 @@ const BookingForm = () => {
                 slideRefs.current[4] = element;
               }}
               className={`form-slide-panel ${currentStep === 4 ? "active-panel" : ""}`}
+              {...getSlidePanelA11y(4)}
             >
-              <div className="calendar-focus-container confirmation-stage">
-                <div className="confirmation-stage-intro">
-                  <div className="confirmation-stage-copy">
-                    <span className="confirmation-stage-eyebrow">
-                      Paso 4 de 4
-                    </span>
-                    <h3
-                      className="section-title center-text confirmation-stage-title"
-                      tabIndex={-1}
-                    >
-                      <FaCalendarCheck /> Confirmación final
-                    </h3>
-                    <p className="step-empathy-note confirmation-stage-note">
-                      Ya tenés fecha y horario. Solo queda elegir la duración
-                      ideal y revisar el resumen con todo bien claro antes de
-                      confirmar.
-                    </p>
-                  </div>
-
-                  <div
-                    className={`confirmation-stage-badge ${isConfirmationReady ? "is-ready" : ""}`}
-                  >
-                    <span>
-                      {isConfirmationReady ? "Todo listo" : "Último detalle"}
-                    </span>
-                    <strong>
-                      {isConfirmationReady
-                        ? "Reserva preparada para confirmar"
-                        : "Elegí cuánto durará la clase"}
-                    </strong>
-                  </div>
-                </div>
-
-                <section className="confirmation-hero-panel">
-                  <article className="confirmation-hero-main">
-                    <span className="confirmation-hero-kicker">
-                      Tu reserva en una mirada
-                    </span>
-                    <h4>{confirmationDateLabel || "Aún falta definir el turno"}</h4>
-                    <p>
-                      {confirmationTimeRangeLabel
-                        ? "Este es el horario que va a quedar guardado. Ajustá la duración y confirmás en un último paso, sin vueltas."
-                        : "Cuando elijas un horario, acá te dejamos el resumen principal para cerrarlo con tranquilidad."}
-                    </p>
-
-                    <div className="confirmation-hero-facts">
-                      <div className="confirmation-hero-fact">
-                        <FaClock />
-                        <div>
-                          <span>Horario</span>
-                          <strong>{confirmationTimeRangeLabel || "Pendiente"}</strong>
-                        </div>
-                      </div>
-
-                      <div className="confirmation-hero-fact">
-                        <FaHourglassHalf />
-                        <div>
-                          <span>Duración</span>
-                          <strong>
-                            {confirmationDurationLabel || "Aún sin elegir"}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div className="confirmation-hero-fact">
-                        <FaTicketAlt />
-                        <div>
-                          <span>Gestión</span>
-                          <strong>Código al confirmar</strong>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-
-                  <aside className="confirmation-hero-side">
-                    <span className="confirmation-hero-side-kicker">
-                      Experiencia guiada
-                    </span>
-
-                    <div className="confirmation-hero-checks">
-                      <span className="confirmation-hero-check is-done">
-                        <FaCheckCircle /> Fecha elegida
-                      </span>
-                      <span
-                        className={`confirmation-hero-check ${isTimeSelected ? "is-done" : ""}`}
-                      >
-                        <FaCheckCircle /> Horario reservado
-                      </span>
-                      <span
-                        className={`confirmation-hero-check ${isConfirmationReady ? "is-done" : ""}`}
-                      >
-                        <FaShieldAlt /> Duración confirmada
-                      </span>
-                    </div>
-
-                    <p>
-                      {isConfirmationReady
-                        ? "Ya elegiste una opción compatible. Si todo te cierra, el botón final queda listo para confirmar."
-                        : `Te mostramos ${durationOptions.length} opciones compatibles con este horario para que elijas sin cruces ni confusiones.`}
-                    </p>
-                  </aside>
-                </section>
-
-                <section className="duration-selector duration-selector-premium">
-                  <div className="duration-selector-header">
-                    <div>
-                      <span className="duration-kicker">
-                        Duración de la clase
-                      </span>
-                      <h4>Elegí el tiempo ideal para este encuentro</h4>
-                      <p>
-                        Solo ves duraciones que entran dentro de ese horario,
-                        así todo queda prolijo, claro y sin superposiciones.
-                      </p>
-                    </div>
-
-                    <span className="duration-limit-badge">
-                      Hasta {formatDurationOptionLabel(maxAllowedDuration)}
-                    </span>
-                  </div>
-
-                  <div className="duration-selector-layout">
-                    <div
-                      className="duration-option-grid"
-                      role="list"
-                      aria-label="Opciones de duración"
-                    >
-                      {durationOptions.map((duration) => {
-                        const isSelected = Number(formData.duration) === duration;
-                        return (
-                          <button
-                            key={duration}
-                            type="button"
-                            className={`duration-chip ${isSelected ? "selected" : ""}`}
-                            onClick={() => handleDurationSelect(duration)}
-                            aria-pressed={isSelected}
-                          >
-                            {formatDurationOptionLabel(duration)}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <aside
-                      className={`duration-summary-card ${isConfirmationReady ? "is-ready" : ""}`}
-                    >
-                      <span className="duration-summary-kicker">
-                        {isConfirmationReady
-                          ? "Duración elegida"
-                          : "Tu siguiente paso"}
-                      </span>
-                      <strong>
-                        {isConfirmationReady
-                          ? confirmationDurationLabel
-                          : "Marcá una opción"}
-                      </strong>
-                      <p>
-                        {formData.duration
-                          ? `La clase quedará reservada por ${formatDurationOptionLabel(formData.duration)}.`
-                          : "Tocá una tarjeta para definir cuánto tiempo querés reservar."}
-                      </p>
-
-                      <div className="duration-summary-meta">
-                        <span>
-                          <FaShieldAlt /> Sin cruces
-                        </span>
-                        <span>
-                          <FaCalendarCheck /> Revisar y confirmar
-                        </span>
-                      </div>
-                    </aside>
-                  </div>
-
-                  <div className="duration-footer">
-                    <p className="duration-current-selection">
-                      {formData.duration
-                        ? `Elegiste ${formatDurationOptionLabel(formData.duration)} para este turno.`
-                          : "Elegí cuánto tiempo querés reservar para continuar."}
-                    </p>
-                    <p className="duration-limit">
-                      Límite disponible para este turno:{" "}
-                      {formatDurationOptionLabel(maxAllowedDuration)}
-                    </p>
-                  </div>
-                </section>
-
-                <BookingConfirmationSummary
-                  dateLabel={confirmationDateLabel}
-                  durationLabel={confirmationDurationLabel}
-                  timeRangeLabel={confirmationTimeRangeLabel}
-                  studentName={formData.studentName}
-                  responsibleName={formData.responsibleName}
-                  responsibleRelationshipLabel={responsibleRelationshipLabel}
-                  isAdult={isAdult}
-                  educationLevel={confirmationEducationLabel}
-                  subject={formData.subject}
-                  school={formData.school}
-                  email={formData.email}
-                  phone={formData.phone}
-                  lookupHint={confirmationLookupHint}
-                />
-              </div>
-
-              <div className="step-actions space-between confirmation-stage-actions">
-                <button
-                  type="button"
-                  className="btn-neuro-secondary"
-                  onClick={goToPrev}
-                >
-                  <FaArrowLeft /> Horario
-                </button>
-                <button
-                  type="submit"
-                  className={`btn-neuro-success ${formData.duration >= 0.5 ? "ready-to-pulse" : "btn-disabled"}`}
-                  onClick={handleSubmit}
-                  disabled={
-                    loading || !formData.duration || formData.duration < 0.5
-                  }
-                >
-                  {loading ? "Procesando..." : "Confirmar Reserva"}
-                </button>
-              </div>
+              <ConfirmationStep
+                formData={formData}
+                isAdult={isAdult}
+                isTimeSelected={isTimeSelected}
+                isConfirmationReady={isConfirmationReady}
+                confirmationDateLabel={confirmationDateLabel}
+                confirmationDurationLabel={confirmationDurationLabel}
+                confirmationTimeRangeLabel={confirmationTimeRangeLabel}
+                confirmationEducationLabel={confirmationEducationLabel}
+                responsibleRelationshipLabel={responsibleRelationshipLabel}
+                confirmationLookupHint={confirmationLookupHint}
+                durationOptions={durationOptions}
+                maxAllowedDuration={maxAllowedDuration}
+                handleDurationSelect={handleDurationSelect}
+                handleSubmit={handleSubmit}
+                goToPrev={goToPrev}
+                loading={loading}
+              />
             </div>
           </div>
         </div>
@@ -2649,12 +1358,10 @@ const BookingForm = () => {
             <div className="calendar-zoom-header">
               <div>
                 <span className="calendar-zoom-kicker">Vista ampliada</span>
-                <h3 id="calendar-zoom-title">
-                  Elegí tu fecha con más espacio
-                </h3>
+                <h3 id="calendar-zoom-title">Elegí tu fecha con más espacio</h3>
                 <p>
-                  Mostramos una grilla más grande y enfocada en un solo mes
-                  para que la selecciones con comodidad sin perder armonía visual.
+                  Mostramos una grilla más grande y enfocada en un solo mes para
+                  que la selecciones con comodidad sin perder armonía visual.
                 </p>
               </div>
 

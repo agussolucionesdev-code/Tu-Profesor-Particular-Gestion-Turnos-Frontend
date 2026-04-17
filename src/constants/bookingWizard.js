@@ -24,7 +24,7 @@ export const WIZARD_STEPS = [
     id: 4,
     label: "Confirmar",
     title: "Listo para confirmar",
-    message: "Revisás el resumen y te llevas un código para gestionar cualquier cambio.",
+    message: "Revisás el resumen y te llevás un código para gestionar cualquier cambio.",
     chips: ["Resumen final", "Código de gestión"],
   },
 ];

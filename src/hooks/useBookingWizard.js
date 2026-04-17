@@ -1,7 +1,6 @@
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { WIZARD_STEPS } from "../constants/bookingWizard";
 import {
-  ADULT_RELATIONSHIP_VALUE,
   RESPONSIBLE_RELATIONSHIP_OTHER_VALUE,
   sanitizePersonNameAr,
   sanitizeRelationshipOtherAr,
@@ -24,16 +23,13 @@ const INITIAL_FORM_DATA = {
   duration: "",
 };
 
-export const useBookingWizard = (apiUrl, showToast) => {
-  const [currentStep, setCurrentStep] = useState(1);
+const regexName = /^[A-Za-zÀ-ÿ\u00f1\u00d1\s']{3,60}$/;
+const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+export const useBookingWizard = (showToast) => {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [isAdult, setIsAdult] = useState(false);
   const [hasAttemptedNext, setHasAttemptedNext] = useState(false);
-  const [hasUnlockedAcademic, setHasUnlockedAcademic] = useState(false);
-  const [hasUnlockedComments, setHasUnlockedComments] = useState(false);
-
-  const regexName = /^[A-Za-zÀ-ÿ\u00f1\u00d1\s']{3,60}$/;
-  const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
   const isValidField = useCallback(
     (field) => {
@@ -49,16 +45,15 @@ export const useBookingWizard = (apiUrl, showToast) => {
             regexName.test(formData.responsibleName.trim())
           );
         case "responsibleRelationship":
-          return isAdult
-            ? true
-            : formData.responsibleRelationship !== "";
+          return isAdult ? true : formData.responsibleRelationship !== "";
         case "responsibleRelationshipOther":
-          return formData.responsibleRelationship !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
+          return formData.responsibleRelationship !==
+            RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
             ? true
             : regexName.test(formData.responsibleRelationshipOther.trim());
         case "email":
           return (
-            formData.email.trim() === "" ||
+            formData.email.trim().length > 0 &&
             regexEmail.test(formData.email.trim())
           );
         case "phone":
@@ -77,11 +72,16 @@ export const useBookingWizard = (apiUrl, showToast) => {
           return false;
       }
     },
-    [formData, isAdult]
+    [formData, isAdult],
   );
 
-  const isPersonalInfoComplete = useMemo(() => {
-    return (
+  const isEmailAcceptable = useMemo(
+    () => formData.email.trim() === "" || regexEmail.test(formData.email.trim()),
+    [formData.email],
+  );
+
+  const isPersonalInfoComplete = useMemo(
+    () =>
       isValidField("studentName") &&
       isValidField("phone") &&
       (isAdult
@@ -89,51 +89,49 @@ export const useBookingWizard = (apiUrl, showToast) => {
         : isValidField("responsibleName") &&
           isValidField("responsibleRelationship") &&
           isValidField("responsibleRelationshipOther")) &&
-      isValidField("email")
-    );
-  }, [isValidField, isAdult]);
+      isEmailAcceptable,
+    [isValidField, isAdult, isEmailAcceptable],
+  );
 
-  const isAcademicInfoComplete = useMemo(() => {
-    return (
+  const isAcademicInfoComplete = useMemo(
+    () =>
       isValidField("educationLevel") &&
       isValidField("yearGrade") &&
       isValidField("subject") &&
-      isValidField("school")
-    );
-  }, [isValidField]);
-
-  const canProceedToStep2 = useMemo(() => {
-    return isPersonalInfoComplete && isAcademicInfoComplete;
-  }, [isPersonalInfoComplete, isAcademicInfoComplete]);
-
-  const handleChange = useCallback(
-    (e) => {
-      const { name, value } = e.target;
-      let finalValue = value;
-
-      if (name === "studentName" || name === "responsibleName") {
-        finalValue = sanitizePersonNameAr(value);
-      }
-      if (name === "responsibleRelationshipOther") {
-        finalValue = sanitizeRelationshipOtherAr(value);
-      }
-      if (name === "phone") finalValue = formatPhoneMaskAr(value);
-      if (name === "email") finalValue = value.trimStart().toLowerCase();
-
-      setFormData((prev) => {
-        const newData = { ...prev, [name]: finalValue };
-        if (name === "educationLevel") newData.yearGrade = "";
-        if (
-          name === "responsibleRelationship" &&
-          value !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
-        ) {
-          newData.responsibleRelationshipOther = "";
-        }
-        return newData;
-      });
-    },
-    []
+      isValidField("school"),
+    [isValidField],
   );
+
+  const canProceedToStep2 = useMemo(
+    () => isPersonalInfoComplete && isAcademicInfoComplete,
+    [isPersonalInfoComplete, isAcademicInfoComplete],
+  );
+
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    let finalValue = value;
+
+    if (name === "studentName" || name === "responsibleName") {
+      finalValue = sanitizePersonNameAr(value);
+    }
+    if (name === "responsibleRelationshipOther") {
+      finalValue = sanitizeRelationshipOtherAr(value);
+    }
+    if (name === "phone") finalValue = formatPhoneMaskAr(value);
+    if (name === "email") finalValue = value.trimStart().toLowerCase();
+
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: finalValue };
+      if (name === "educationLevel") newData.yearGrade = "";
+      if (
+        name === "responsibleRelationship" &&
+        value !== RESPONSIBLE_RELATIONSHIP_OTHER_VALUE
+      ) {
+        newData.responsibleRelationshipOther = "";
+      }
+      return newData;
+    });
+  }, []);
 
   const toggleAdultMode = useCallback(() => {
     const adultModeLocked =
@@ -146,11 +144,13 @@ export const useBookingWizard = (apiUrl, showToast) => {
 
     if (adultModeLocked) {
       showToast?.(
-        "Para pasar a alumno mayor de edad, primero limpia los datos del adulto responsable.",
+        "Para pasar a alumno mayor de edad, primero limpiá los datos del adulto responsable.",
         "info",
         {
           title: "Opción momentáneamente bloqueada",
-        }
+          speak:
+            "Si querés pasar a alumno mayor de edad, primero quitá los datos del adulto responsable que ya cargaste.",
+        },
       );
       return;
     }
@@ -169,31 +169,10 @@ export const useBookingWizard = (apiUrl, showToast) => {
     });
   }, [isAdult, formData, showToast]);
 
-  const goToStep = useCallback((targetStep) => {
-    if (targetStep < 1 || targetStep > WIZARD_STEPS.length) return;
-    setCurrentStep(targetStep);
-  }, []);
-
-  const goToNext = useCallback(() => {
-    if (currentStep < WIZARD_STEPS.length) {
-      setHasAttemptedNext(true);
-      setCurrentStep((prev) => prev + 1);
-    }
-  }, [currentStep]);
-
-  const goToPrev = useCallback(() => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
-  }, [currentStep]);
-
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_DATA);
     setIsAdult(false);
-    setCurrentStep(1);
     setHasAttemptedNext(false);
-    setHasUnlockedAcademic(false);
-    setHasUnlockedComments(false);
   }, []);
 
   const getFieldStateClass = useCallback(
@@ -207,15 +186,11 @@ export const useBookingWizard = (apiUrl, showToast) => {
           : value.length > 0;
       return hasAttemptedNext || hasStartedTyping ? "error" : "";
     },
-    [isValidField, formData, hasAttemptedNext]
+    [isValidField, formData, hasAttemptedNext],
   );
 
-  const stepProgress = useMemo(() => {
-    return ((currentStep - 1) / Math.max(WIZARD_STEPS.length - 1, 1)) * 100;
-  }, [currentStep]);
-
-  const requiredChecks = useMemo(() => {
-    return [
+  const requiredChecks = useMemo(
+    () => [
       isValidField("studentName"),
       isValidField("phone"),
       isAdult ? true : isValidField("responsibleName"),
@@ -224,49 +199,33 @@ export const useBookingWizard = (apiUrl, showToast) => {
       isValidField("yearGrade"),
       isValidField("subject"),
       isValidField("school"),
-    ];
-  }, [isValidField, isAdult]);
+    ],
+    [isValidField, isAdult],
+  );
 
   const completionPercent = useMemo(() => {
     const completed = requiredChecks.filter(Boolean).length;
     return Math.round((completed / requiredChecks.length) * 100);
   }, [requiredChecks]);
 
-  useEffect(() => {
-    if (isPersonalInfoComplete && !hasUnlockedAcademic) {
-      setHasUnlockedAcademic(true);
-    } else if (!isPersonalInfoComplete && hasUnlockedAcademic) {
-      setHasUnlockedAcademic(false);
-    }
-  }, [isPersonalInfoComplete, hasUnlockedAcademic]);
-
-  useEffect(() => {
-    if (isAcademicInfoComplete && !hasUnlockedComments) {
-      setHasUnlockedComments(true);
-    } else if (!isAcademicInfoComplete && hasUnlockedComments) {
-      setHasUnlockedComments(false);
-    }
-  }, [isAcademicInfoComplete, hasUnlockedComments]);
-
   return {
-    currentStep,
     formData,
+    setFormData,
     isAdult,
+    setIsAdult,
     hasAttemptedNext,
-    hasUnlockedAcademic,
-    hasUnlockedComments,
+    setHasAttemptedNext,
+    hasUnlockedAcademic: isPersonalInfoComplete,
+    hasUnlockedComments: isAcademicInfoComplete,
     isValidField,
+    isEmailAcceptable,
     isPersonalInfoComplete,
     isAcademicInfoComplete,
     canProceedToStep2,
     handleChange,
     toggleAdultMode,
-    goToStep,
-    goToNext,
-    goToPrev,
     resetForm,
     getFieldStateClass,
-    stepProgress,
     completionPercent,
     requiredChecks,
     WIZARD_STEPS,

@@ -39,19 +39,19 @@ const FOOTER_LINKS = [
 
 const SOCIAL_LINKS = [
   {
-    href: "https://instagram.com",
+    href: import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com",
     label: "Instagram",
     icon: <FaInstagram />,
     className: "social-bubble insta",
   },
   {
-    href: "https://facebook.com",
+    href: import.meta.env.VITE_FACEBOOK_URL || "https://facebook.com",
     label: "Facebook",
     icon: <FaFacebookF />,
     className: "social-bubble fb",
   },
   {
-    href: "https://linkedin.com",
+    href: import.meta.env.VITE_LINKEDIN_URL || "https://linkedin.com",
     label: "LinkedIn",
     icon: <FaLinkedinIn />,
     className: "social-bubble in",
@@ -101,11 +101,10 @@ const Footer = () => {
             </div>
 
             <div className="brand-philosophy">
-              <h4 className="neuro-hook">Desbloqueá tu verdadero potencial.</h4>
+              <h4 className="neuro-hook">Clases particulares con orden, cercanía y seguimiento.</h4>
               <p className="neuro-copy">
-                Un enfoque integral que fusiona neurociencia, psicología y
-                empatía. No se trata de memorizar, sino de dominar el
-                conocimiento de manera dinámica y adaptada a vos.
+                Un espacio para aprender con claridad, resolver dudas y llegar
+                a cada clase con un plan concreto, humano y adaptado a vos.
               </p>
             </div>
 
@@ -114,10 +113,10 @@ const Footer = () => {
                 <FaUserCheck /> ATENCIÓN PERSONALIZADA
               </span>
               <span className="value-tag">
-                <FaBrain /> MÉTODO NEUROCOGNITIVO
+                <FaBrain /> ACOMPAÑAMIENTO CLARO
               </span>
               <span className="value-tag">
-                <FaGlobe /> APRENDIZAJE INTEGRAL
+                <FaGlobe /> GESTIÓN SIMPLE
               </span>
             </div>
           </div>
