@@ -160,7 +160,7 @@ const ClientPortal = () => {
     const codeToCancel = cancelingBooking.bookingCode;
 
     try {
-      const response = await cancelBooking(codeToCancel);
+      const response = await cancelBooking({ bookingCode: codeToCancel });
       const notifications = response.data.notifications;
       const clientSent =
         notifications?.client?.sent ?? notifications?.clientEmailSent ?? false;
@@ -263,12 +263,12 @@ const ClientPortal = () => {
           <div className="guidance-card">
             <FaSearch />
             <strong>Empieza por el código</strong>
-            <span>Si lo tienes, pégalo tal cual aparece en tu comprobante.</span>
+            <span>Si lo tenés, pegalo tal cual aparece en tu comprobante.</span>
           </div>
           <div className="guidance-card">
             <FaCalendarAlt />
             <strong>También sirve tu contacto</strong>
-            <span>Si no tienes el código a mano, usa email o número de teléfono.</span>
+            <span>Si no tenés el código a mano, usá email o número de teléfono.</span>
           </div>
           <div className="guidance-card">
             <FaWhatsapp />
@@ -284,7 +284,7 @@ const ClientPortal = () => {
           <div className="portal-management-copy">
             <strong>Tu código vive en Mis Turnos</strong>
             <p>
-              Si tienes el código de reserva, pégalo tal cual aparece en el
+              Si tenés el código de reserva, pegalo tal cual aparece en el
               comprobante. Si no, también podés usar el email o el número de
               teléfono que cargaste al reservar.
             </p>
@@ -342,7 +342,7 @@ const ClientPortal = () => {
           <div className="empty-state">
             <FaCalendarCheck className="empty-state-icon" />
             <p>
-              No hay turnos activos para mostrar. Prueba con tu código exacto,
+              No hay turnos activos para mostrar. Probá con tu código exacto,
               email o número de teléfono cargados al reservar.
             </p>
           </div>

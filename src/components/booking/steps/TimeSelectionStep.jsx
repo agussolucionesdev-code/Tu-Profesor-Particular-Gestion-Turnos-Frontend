@@ -218,7 +218,7 @@ const TimeSelectionStep = ({
                   </strong>
                   <small>
                     {isTimeSelected
-                      ? "Ya puedes pasar al resumen final."
+                      ? "Ya podés pasar al resumen final."
                       : nextFreeSlot
                         ? "Te sugerimos empezar por el primer hueco libre."
                         : "Si este día no sirve, volvés y elegís otra fecha."}
