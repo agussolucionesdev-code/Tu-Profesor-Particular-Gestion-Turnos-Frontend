@@ -53,6 +53,30 @@
   --z-dropdown: 100;
   --z-modal: 1000;
   --z-toast: 1100;
+
+  /* Semantic / status colors */
+  --color-success: #10b981;
+  --color-success-hover: #34d399;
+  --color-success-emphasis: #059669;
+  --color-success-deep: #047857;
+  --color-success-bg: rgba(16, 185, 129, 0.14);
+  --color-on-success: #06231b;
+
+  --color-warning-emphasis: #d97706;
+  --color-warning-deep: #b45309;
+  --color-warning-bg: rgba(245, 158, 11, 0.14);
+
+  --color-error-emphasis: #dc2626;
+  --color-error-deep: #b91c1c;
+  --color-error-bg: rgba(239, 68, 68, 0.12);
+
+  --color-info-emphasis: #2563eb;
+  --color-info-deep: #1d4ed8;
+  --color-info-bg: rgba(59, 130, 246, 0.12);
+
+  --color-teal: #0f766e;
+  --color-text-secondary: #64748b;
+  --color-text-strong: #334155;
 }
 
 @media (prefers-reduced-motion: reduce) {

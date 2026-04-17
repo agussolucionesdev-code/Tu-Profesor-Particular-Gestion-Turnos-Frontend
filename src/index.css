@@ -76,6 +76,26 @@
   --scrollbar-thumb-hover: #475569;
   --scrollbar-border: transparent;
   --scrollbar-shadow: none;
+
+  /* Semantic color overrides for dark mode */
+  --color-success: #34d399;
+  --color-success-hover: #6ee7b7;
+  --color-success-emphasis: #6ee7b7;
+  --color-success-deep: #a7f3d0;
+  --color-success-bg: rgba(16, 185, 129, 0.2);
+  --color-on-success: #022c1e;
+  --color-warning-emphasis: #fbbf24;
+  --color-warning-deep: #fcd34d;
+  --color-warning-bg: rgba(245, 158, 11, 0.2);
+  --color-error-emphasis: #f87171;
+  --color-error-deep: #fca5a5;
+  --color-error-bg: rgba(127, 29, 29, 0.22);
+  --color-info-emphasis: #60a5fa;
+  --color-info-deep: #93c5fd;
+  --color-info-bg: rgba(59, 130, 246, 0.18);
+  --color-teal: #5eead4;
+  --color-text-secondary: #94a3b8;
+  --color-text-strong: #dbeafe;
 }
 
 html {
