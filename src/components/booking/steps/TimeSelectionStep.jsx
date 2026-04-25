@@ -117,7 +117,7 @@ const TimeSelectionStep = ({
                   {availableSlots.length > 0 ? (
                     <div className="slot-sections">
                       {slotSections.map((section) => (
-                        <section key={section.id} className="slot-section">
+                        <section key={section.id} className="slot-section" data-period={section.id}>
                           <div className="slot-section-header">
                             <div>
                               <h4>{section.label}</h4>

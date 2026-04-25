@@ -14,6 +14,7 @@ import "./index.css";
 import "./styles/accessibility-system.css";
 import "./styles/minimalist-design.css";
 import "./styles/final-polish.css";
+import "./styles/booking-interactions.css";
 
 const BookingForm = lazy(() => import("./components/BookingForm"));
 const AdminPanel = lazy(() => import("./components/AdminPanel"));
