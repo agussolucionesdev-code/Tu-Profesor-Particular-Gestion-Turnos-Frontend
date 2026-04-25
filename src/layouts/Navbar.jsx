@@ -5,6 +5,7 @@ import {
   FaBars,
   FaCalendarAlt,
   FaClipboardList,
+  FaExclamationTriangle,
   FaMoon,
   FaSun,
   FaTimes,
@@ -13,7 +14,7 @@ import {
   FaVolumeUp,
 } from "react-icons/fa";
 import { useUISettings } from "../components/accessibility/UISettingsContext";
-import logoFull from "../assets/images/logo-full-sin-fondo.png";
+import logoIcon from "../assets/images/logo-icon-sin-fondo.png";
 import {
   isVoiceMuted,
   primeVoicePlayback,
@@ -23,6 +24,8 @@ import "./Navbar.css";
 
 const VOICE_HINT_KEY = "voice_hint_seen";
 const VOICE_MUTED_EVENT = "neuro-voice-muted-changed";
+const VOICE_BLOCKED_EVENT = "neuro-voice-blocked";
+const VOICE_READY_EVENT = "neuro-voice-ready";
 const NAVBAR_VOICE_OPTIONS = {
   rate: 0.86,
   pitch: 0.98,
@@ -33,6 +36,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [voiceMuted, setVoiceMutedState] = useState(() => isVoiceMuted());
+  const [voiceBlocked, setVoiceBlocked] = useState(false);
   const [showVoiceHint, setShowVoiceHint] = useState(() => {
     try {
       return window.localStorage.getItem(VOICE_HINT_KEY) !== "true";
@@ -46,28 +50,15 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const isPastThreshold = window.scrollY > 20;
-      setScrolled(isPastThreshold);
-
-      if (isPastThreshold) {
-        setShowVoiceHint((currentValue) => {
-          if (!currentValue) return currentValue;
-
-          try {
-            window.localStorage.setItem(VOICE_HINT_KEY, "true");
-          } catch {
-            // Ignore storage errors silently.
-          }
-
-          return false;
-        });
-      }
+      setScrolled(window.scrollY > 20);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Hint de voz: persiste hasta interacción explícita o 12 s, ya no
+  // se descarta con el primer scroll (eso era confuso para el usuario).
   useEffect(() => {
     if (!showVoiceHint) return undefined;
 
@@ -78,7 +69,7 @@ const Navbar = () => {
       } catch {
         // Ignore storage errors silently.
       }
-    }, 6500);
+    }, 12000);
 
     return () => window.clearTimeout(timeoutId);
   }, [showVoiceHint]);
@@ -95,15 +86,25 @@ const Navbar = () => {
 
   useEffect(() => {
     const syncVoiceState = (event) => {
-      setVoiceMutedState(
+      const nextMuted =
         typeof event.detail?.muted === "boolean"
           ? event.detail.muted
-          : isVoiceMuted(),
-      );
+          : isVoiceMuted();
+      setVoiceMutedState(nextMuted);
+      if (nextMuted) setVoiceBlocked(false);
     };
 
+    const handleBlocked = () => setVoiceBlocked(true);
+    const handleReady = () => setVoiceBlocked(false);
+
     window.addEventListener(VOICE_MUTED_EVENT, syncVoiceState);
-    return () => window.removeEventListener(VOICE_MUTED_EVENT, syncVoiceState);
+    window.addEventListener(VOICE_BLOCKED_EVENT, handleBlocked);
+    window.addEventListener(VOICE_READY_EVENT, handleReady);
+    return () => {
+      window.removeEventListener(VOICE_MUTED_EVENT, syncVoiceState);
+      window.removeEventListener(VOICE_BLOCKED_EVENT, handleBlocked);
+      window.removeEventListener(VOICE_READY_EVENT, handleReady);
+    };
   }, []);
 
   const dismissVoiceHint = () => {
@@ -177,20 +178,31 @@ const Navbar = () => {
 
   return (
     <nav className={`navbar-elite ${scrolled ? "scrolled" : ""}`}>
+      <div className="navbar-aurora" aria-hidden="true" />
       <div className="navbar-container">
         <Link
           to="/reservar"
-          className="navbar-brand-logo"
+          className="navbar-brand"
           onClick={() => setIsOpen(false)}
-          aria-label="Ir al inicio de reservas"
+          aria-label="Tu Profesor Particular — Agustín Elías Sosa"
         >
-          <span className="navbar-brand-media" aria-hidden="true">
-            <span className="navbar-brand-halo"></span>
-            <img src={logoFull} alt="" className="logo-img-horizontal" />
+          <span className="brand-mark" aria-hidden="true">
+            <span className="brand-mark-orbit" />
+            <span className="brand-mark-glow" />
+            <img src={logoIcon} alt="" className="brand-mark-img" />
+            <span className="brand-mark-sparkle brand-mark-sparkle--one" />
+            <span className="brand-mark-sparkle brand-mark-sparkle--two" />
+            <span className="brand-mark-sparkle brand-mark-sparkle--three" />
           </span>
-          <span className="navbar-brand-copy">
-            <strong>Tu Profesor Particular</strong>
-            <small>Turnos guiados</small>
+          <span className="brand-copy">
+            <span className="brand-eyebrow">
+              <span className="brand-eyebrow-dot" aria-hidden="true" />
+              Clases particulares
+            </span>
+            <span className="brand-title">
+              Tu Profesor <span className="brand-title-accent">Particular</span>
+            </span>
+            <span className="brand-signature">Agustín Elías Sosa</span>
           </span>
         </Link>
 
@@ -207,9 +219,15 @@ const Navbar = () => {
                     to={link.path}
                     className={`nav-link-btn ${isActive ? "active" : ""}`}
                     onClick={() => setIsOpen(false)}
+                    aria-current={isActive ? "page" : undefined}
                   >
-                    <span className="nav-icon">{link.icon}</span>
+                    <span className="nav-icon" aria-hidden="true">
+                      {link.icon}
+                    </span>
                     <span className="nav-text">{link.title}</span>
+                    {isActive && (
+                      <span className="nav-active-pulse" aria-hidden="true" />
+                    )}
                   </Link>
                 </li>
               );
@@ -220,8 +238,10 @@ const Navbar = () => {
             className="navbar-utility-cluster"
             aria-label="Preferencias visuales y de voz"
           >
-            <div className="voice-toggle-shell">
-              {showVoiceHint && (
+            <div
+              className={`voice-toggle-shell ${voiceMuted ? "muted" : "active"} ${voiceBlocked ? "blocked" : ""}`}
+            >
+              {showVoiceHint && voiceMuted && !voiceBlocked && (
                 <button
                   type="button"
                   className="voice-hint-bubble"
@@ -233,34 +253,58 @@ const Navbar = () => {
 
               <button
                 type="button"
-                className={`nav-utility-btn nav-utility-pill voice-toggle-btn ${voiceMuted ? "muted" : "active"}`}
+                className={`nav-utility-btn voice-toggle-btn ${voiceMuted ? "muted" : "active"} ${voiceBlocked ? "blocked" : ""}`}
                 onClick={toggleVoice}
                 onBlur={dismissVoiceHint}
                 title={
-                  voiceMuted
-                    ? "Activar guía por voz"
-                    : "Pausar guía por voz"
+                  voiceBlocked
+                    ? "El navegador bloqueó la voz. Habilitá el sonido para este sitio y reintentá."
+                    : voiceMuted
+                      ? "Activar guía por voz"
+                      : "Pausar guía por voz"
                 }
                 aria-label={
-                  voiceMuted
-                    ? "Activar guía por voz"
-                    : "Pausar guía por voz"
+                  voiceBlocked
+                    ? "Guía por voz bloqueada por el navegador. Tocá para reintentar."
+                    : voiceMuted
+                      ? "Activar guía por voz"
+                      : "Pausar guía por voz"
                 }
                 aria-pressed={!voiceMuted}
               >
                 <span className="nav-utility-icon" aria-hidden="true">
-                  {voiceMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+                  {voiceBlocked ? (
+                    <FaExclamationTriangle />
+                  ) : voiceMuted ? (
+                    <FaVolumeMute />
+                  ) : (
+                    <FaVolumeUp />
+                  )}
                 </span>
                 <span className="nav-utility-copy">
                   <strong>Guía por voz</strong>
-                  <small>{voiceMuted ? "Pausada" : "Activa y suave"}</small>
+                  <small>
+                    {voiceBlocked
+                      ? "Habilitala en tu navegador"
+                      : voiceMuted
+                        ? "Tocá para activar"
+                        : "Te acompaño al reservar"}
+                  </small>
                 </span>
+                {!voiceMuted && !voiceBlocked && (
+                  <span className="voice-wave" aria-hidden="true">
+                    <span className="voice-wave-bar" />
+                    <span className="voice-wave-bar" />
+                    <span className="voice-wave-bar" />
+                    <span className="voice-wave-bar" />
+                  </span>
+                )}
               </button>
             </div>
 
             <button
               type="button"
-              className="nav-utility-btn nav-utility-pill theme-toggle-btn"
+              className="nav-utility-btn theme-toggle-btn"
               onClick={toggleTheme}
               title={
                 effectiveTheme === "dark"
@@ -273,12 +317,9 @@ const Navbar = () => {
                   : "Cambiar a modo oscuro"
               }
             >
-              <span className="nav-utility-icon" aria-hidden="true">
-                {effectiveTheme === "dark" ? (
-                  <FaSun className="icon-sun" />
-                ) : (
-                  <FaMoon className="icon-moon" />
-                )}
+              <span className="nav-utility-icon theme-toggle-icon-wrap" aria-hidden="true">
+                <FaSun className="theme-icon theme-icon--sun" />
+                <FaMoon className="theme-icon theme-icon--moon" />
               </span>
               <span className="nav-utility-copy">
                 <strong>

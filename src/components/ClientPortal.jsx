@@ -17,6 +17,7 @@ import "../styles/accessibility-system.css";
 import BookingTicket from "./BookingTicket";
 import RescheduleModal from "./portal/RescheduleModal";
 import CancelModal from "./portal/CancelModal";
+import logoIcon from "../assets/images/logo-icon-sin-fondo.png";
 import {
   lookupBookings,
   cancelBooking,
@@ -254,6 +255,12 @@ const ClientPortal = () => {
 
       <div className="portal-container">
         <div className="portal-header">
+          <img
+            src={logoIcon}
+            alt=""
+            aria-hidden="true"
+            className="portal-header-logo"
+          />
           <h1 className="portal-title">Mis Turnos</h1>
           <p className="portal-subtitle">Gestioná tus clases próximas.</p>
           <div className="header-decoration"></div>

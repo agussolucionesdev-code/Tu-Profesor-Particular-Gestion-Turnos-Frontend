@@ -49,6 +49,7 @@ import { useAdminAuth } from "../hooks/useAdminAuth";
 import AdminLoginScreen from "./admin/AdminLoginScreen";
 import BookingEditModal from "./admin/BookingEditModal";
 import BookingDetailModal from "./admin/BookingDetailModal";
+import logoIcon from "../assets/images/logo-icon-sin-fondo.png";
 import "./AdminPanel.css";
 import "../styles/theme-polish.css";
 import "../styles/accessibility-system.css";
@@ -397,10 +398,12 @@ const AdminPanel = () => {
     <div className="admin-shell">
       <aside className="admin-sidebar-shell">
         <div className="admin-brand-panel">
-          <div className="admin-brand-badge">AS</div>
+          <div className="admin-brand-badge admin-brand-badge--logo">
+            <img src={logoIcon} alt="" aria-hidden="true" />
+          </div>
           <div>
             <strong>Agustín Sosa</strong>
-            <span>Centro de control</span>
+            <span>Panel del profesor</span>
           </div>
         </div>
 
@@ -470,19 +473,19 @@ const AdminPanel = () => {
       <main className="admin-main-shell">
         <header className="admin-hero">
           <div>
-            <span className="admin-eyebrow">Panel del profesor</span>
-            <h1>Todo lo importante, claro y a tiempo</h1>
+            <span className="admin-eyebrow">Hola, Agustín</span>
+            <h1>Tu agenda al día</h1>
             <p>{heroText}</p>
           </div>
 
           <div className="admin-hero-actions">
             <Link to="/" className="admin-secondary-btn" target="_blank">
               <FaPlus />
-              Simular reserva
+              Nueva reserva
             </Link>
             <button type="button" className="admin-primary-btn slim" onClick={() => setActiveView("bookings")}>
               <FaClipboardList />
-              Ver gestor
+              Ver turnos
             </button>
           </div>
         </header>
