@@ -2,36 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FaBell,
-  FaBookOpen,
-  FaCalendarAlt,
   FaCalendarCheck,
   FaChartLine,
-  FaCheckCircle,
   FaClipboardList,
-  FaEdit,
   FaExclamationTriangle,
-  FaEye,
-  FaFilter,
-  FaIdCard,
-  FaLayerGroup,
   FaPlus,
-  FaRegClock,
-  FaSchool,
-  FaSearch,
   FaSignOutAlt,
-  FaSpinner,
-  FaTrashAlt,
   FaUsers,
-  FaWhatsapp,
 } from "react-icons/fa";
 import {
   buildStudentKey as studentKey,
   formatDayLabel as formatDay,
   formatLongDateLabel as formatDate,
-  formatShortDateLabel as formatShortDate,
   formatTimeLabel as formatTime,
   getBookingStatusBucket as bookingStatusBucket,
-  getBookingStatusLabel as bookingStatusLabel,
   getResponsibleDisplay as responsibleLabel,
   getResponsibleRelationshipDisplay as responsibleRelationshipLabel,
   getResponsibleSummary as responsibleSummary,
@@ -49,12 +33,15 @@ import { useAdminAuth } from "../hooks/useAdminAuth";
 import AdminLoginScreen from "./admin/AdminLoginScreen";
 import BookingEditModal from "./admin/BookingEditModal";
 import BookingDetailModal from "./admin/BookingDetailModal";
+import OverviewView from "./admin/views/OverviewView";
+import AgendaView from "./admin/views/AgendaView";
+import StudentsView from "./admin/views/StudentsView";
+import BookingsView from "./admin/views/BookingsView";
 import logoIcon from "../assets/images/logo-icon-sin-fondo.png";
 import "./AdminPanel.css";
 import "../styles/theme-polish.css";
 import "../styles/accessibility-system.css";
 
-const STATUS_FILTERS = ["Todos", "Confirmado", "Cancelado"];
 const VIEW_OPTIONS = [
   { id: "overview", label: "Resumen", icon: FaChartLine },
   { id: "agenda", label: "Agenda", icon: FaCalendarCheck },
@@ -176,7 +163,9 @@ const AdminPanel = () => {
     const stats = {
       total: enriched.length,
       pending: enriched.filter((booking) => booking.status === "Pendiente").length,
-      confirmed: enriched.filter((booking) => bookingStatusBucket(booking.status) === "Confirmado").length,
+      confirmed: enriched.filter(
+        (booking) => bookingStatusBucket(booking.status) === "Confirmado",
+      ).length,
       cancelled: enriched.filter((booking) => booking.status === "Cancelado").length,
       finalized: enriched.filter((booking) => booking.status === "Finalizado").length,
     };
@@ -186,29 +175,42 @@ const AdminPanel = () => {
 
   const overviewData = useMemo(() => {
     const todayBookings = dashboard.enriched.filter(
-      (booking) => booking.start && sameDay(booking.start, dashboard.today) && booking.status !== "Cancelado",
+      (booking) =>
+        booking.start &&
+        sameDay(booking.start, dashboard.today) &&
+        booking.status !== "Cancelado",
     );
     const upcomingBookings = dashboard.enriched.filter(
-      (booking) => booking.start && booking.start >= dashboard.now && booking.status !== "Cancelado",
+      (booking) =>
+        booking.start &&
+        booking.start >= dashboard.now &&
+        booking.status !== "Cancelado",
     );
     const upcoming24h = upcomingBookings.filter(
       (booking) => booking.start && booking.start <= dashboard.next24h,
     );
     const overduePending = dashboard.enriched.filter(
-      (booking) => booking.status === "Pendiente" && booking.start && booking.start < dashboard.now,
+      (booking) =>
+        booking.status === "Pendiente" &&
+        booking.start &&
+        booking.start < dashboard.now,
     );
     const weekFlow = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(dashboard.today);
       date.setDate(dashboard.today.getDate() + index);
       const count = dashboard.enriched.filter(
-        (booking) => booking.start && sameDay(booking.start, date) && booking.status !== "Cancelado",
+        (booking) =>
+          booking.start &&
+          sameDay(booking.start, date) &&
+          booking.status !== "Cancelado",
       ).length;
       return { label: formatDay(date), count };
     });
 
     const subjectsMap = new Map();
     dashboard.enriched.forEach((booking) => {
-      const subject = String(booking.subject || "Sin materia").trim() || "Sin materia";
+      const subject =
+        String(booking.subject || "Sin materia").trim() || "Sin materia";
       subjectsMap.set(subject, (subjectsMap.get(subject) || 0) + 1);
     });
     const topSubjects = [...subjectsMap.entries()]
@@ -234,7 +236,9 @@ const AdminPanel = () => {
           email: booking.email,
           totalBookings: 1,
           nextBooking:
-            booking.start && booking.start >= dashboard.now && booking.status !== "Cancelado"
+            booking.start &&
+            booking.start >= dashboard.now &&
+            booking.status !== "Cancelado"
               ? booking.start
               : null,
           subjects: new Set([booking.subject].filter(Boolean)),
@@ -267,10 +271,18 @@ const AdminPanel = () => {
 
     const students = [...studentsMap.values()]
       .map((student) => ({ ...student, subjects: [...student.subjects] }))
-      .sort((a, b) => (a.nextBooking?.getTime() ?? Infinity) - (b.nextBooking?.getTime() ?? Infinity));
+      .sort(
+        (a, b) =>
+          (a.nextBooking?.getTime() ?? Infinity) -
+          (b.nextBooking?.getTime() ?? Infinity),
+      );
 
     const recentActivity = [...dashboard.enriched]
-      .sort((a, b) => (toDate(b.updatedAt)?.getTime() ?? 0) - (toDate(a.updatedAt)?.getTime() ?? 0))
+      .sort(
+        (a, b) =>
+          (toDate(b.updatedAt)?.getTime() ?? 0) -
+          (toDate(a.updatedAt)?.getTime() ?? 0),
+      )
       .slice(0, 6);
 
     return {
@@ -295,14 +307,19 @@ const AdminPanel = () => {
 
   const heroText = useMemo(() => {
     if (!dashboard.stats.total) return "Todavía no hay reservas cargadas.";
-    if (dashboard.stats.pending > 0) {
-      return `Tenés ${dashboard.stats.pending} registros heredados para normalizar y ${overviewData.todayBookings.length} clases en agenda para hoy.`;
-    }
     if (overviewData.todayBookings.length > 0) {
       return `Hoy tenés ${overviewData.todayBookings.length} clases activas y ${overviewData.upcoming24h.length} movimientos en las próximas 24 horas.`;
     }
-    return "No hay urgencias activas. Es un buen momento para revisar alumnos, agenda e ingresos.";
-  }, [dashboard.stats.pending, dashboard.stats.total, overviewData.todayBookings.length, overviewData.upcoming24h.length]);
+    if (dashboard.stats.pending > 0) {
+      return `Tenés ${dashboard.stats.pending} registros pendientes para revisar.`;
+    }
+    return "Todo en orden. Buen momento para revisar alumnos y agenda.";
+  }, [
+    dashboard.stats.pending,
+    dashboard.stats.total,
+    overviewData.todayBookings.length,
+    overviewData.upcoming24h.length,
+  ]);
 
   const handleQuickStatusChange = async (id, newStatus) => {
     try {
@@ -326,10 +343,15 @@ const AdminPanel = () => {
     let phone = String(booking.phone).replace(/\D/g, "");
     if (phone.length === 10) phone = `549${phone}`;
     const start = toDate(booking.timeSlot);
-    const when = start ? `${formatDate(start)} a las ${formatTime(start)} hs` : "fecha pendiente";
+    const when = start
+      ? `${formatDate(start)} a las ${formatTime(start)} hs`
+      : "fecha pendiente";
     const name = booking.studentName || "Alumno";
     const message = `Hola ${name}, soy Agustín Sosa. Te escribo por tu turno de ${booking.subject} previsto para ${when}.`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+    window.open(
+      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+      "_blank",
+    );
     setSentMessages((current) => ({ ...current, [booking._id]: true }));
   };
 
@@ -355,6 +377,13 @@ const AdminPanel = () => {
     }
   };
 
+  const openEditBooking = (booking) => {
+    setSelectedBooking(booking);
+    setEditNotes(booking.notes || "");
+    setEditEvolution(booking.studentEvolution || "");
+    setEditEmotionalState(booking.emotionalState || "");
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("¿Estás seguro de eliminar esta reserva?")) return;
     try {
@@ -366,7 +395,9 @@ const AdminPanel = () => {
   };
 
   const handleDeleteAll = async () => {
-    if (!window.confirm("Estás por borrar toda la base de reservas. ¿Continuar?"))
+    if (
+      !window.confirm("Estás por borrar toda la base de reservas. ¿Continuar?")
+    )
       return;
     const confirmation = prompt("Escribe ELIMINAR para confirmar:");
     if (confirmation !== "ELIMINAR") return;
@@ -413,8 +444,8 @@ const AdminPanel = () => {
           <p>{heroText}</p>
           <div className="sidebar-inline-stats">
             <div>
-              <strong>{dashboard.stats.pending}</strong>
-              <span>Legado</span>
+              <strong>{dashboard.stats.confirmed}</strong>
+              <span>Confirmados</span>
             </div>
             <div>
               <strong>{overviewData.students.length}</strong>
@@ -445,15 +476,15 @@ const AdminPanel = () => {
           <div className="sidebar-alert-list">
             <div>
               <FaBell />
-              <span>{overviewData.upcoming24h.length} avisos próximos</span>
+              <span>{overviewData.upcoming24h.length} en 24 hs</span>
             </div>
             <div>
               <FaExclamationTriangle />
-              <span>{dashboard.stats.cancelled} cancelaciones registradas</span>
+              <span>{dashboard.stats.cancelled} cancelados</span>
             </div>
             <div>
               <FaUsers />
-              <span>{overviewData.students.length} perfiles activos</span>
+              <span>{overviewData.students.length} alumnos</span>
             </div>
           </div>
         </div>
@@ -483,7 +514,11 @@ const AdminPanel = () => {
               <FaPlus />
               Nueva reserva
             </Link>
-            <button type="button" className="admin-primary-btn slim" onClick={() => setActiveView("bookings")}>
+            <button
+              type="button"
+              className="admin-primary-btn slim"
+              onClick={() => setActiveView("bookings")}
+            >
               <FaClipboardList />
               Ver turnos
             </button>
@@ -498,7 +533,9 @@ const AdminPanel = () => {
             <div>
               <span>Próximas clases</span>
               <strong>{overviewData.upcomingBookings.length}</strong>
-              <small>{overviewData.upcoming24h.length} dentro de las próximas 24 hs</small>
+              <small>
+                {overviewData.upcoming24h.length} en las próximas 24 hs
+              </small>
             </div>
           </article>
           <article className="admin-kpi-card">
@@ -506,7 +543,7 @@ const AdminPanel = () => {
               <FaExclamationTriangle />
             </div>
             <div>
-              <span>Agenda activa</span>
+              <span>Agenda confirmada</span>
               <strong>{dashboard.stats.confirmed}</strong>
               <small>{overviewData.upcoming24h.length} próximas 24 hs</small>
             </div>
@@ -526,10 +563,12 @@ const AdminPanel = () => {
               <FaChartLine />
             </div>
             <div>
-              <span>Conversión de agenda</span>
+              <span>Conversión</span>
               <strong>
                 {dashboard.stats.total
-                  ? Math.round((dashboard.stats.confirmed / dashboard.stats.total) * 100)
+                  ? Math.round(
+                      (dashboard.stats.confirmed / dashboard.stats.total) * 100,
+                    )
                   : 0}
                 %
               </strong>
@@ -539,397 +578,48 @@ const AdminPanel = () => {
         </section>
 
         {activeView === "overview" && (
-          <>
-            <section className="admin-content-grid two-columns">
-              <article className="admin-card next-class-widget">
-                <div className="admin-card-header">
-                  <div>
-                    <span className="card-kicker">Siguiente Clase</span>
-                    <h3>Próximo Encuentro</h3>
-                  </div>
-                </div>
-                <div className="next-class-details">
-                  {overviewData.upcomingBookings.length === 0 ? (
-                    <p className="empty-copy">No hay clases programadas próximamente.</p>
-                  ) : (
-                    <>
-                      <div className="next-class-info">
-                        <strong>{overviewData.upcomingBookings[0].studentName}</strong>
-                        <span>{overviewData.upcomingBookings[0].subject}</span>
-                        <div className="next-class-time">
-                          <FaRegClock /> {overviewData.upcomingBookings[0].start ? `${formatDate(overviewData.upcomingBookings[0].start)} a las ${formatTime(overviewData.upcomingBookings[0].start)} hs` : "--"}
-                        </div>
-                      </div>
-                      <button 
-                        className="admin-primary-btn slim" 
-                        onClick={() => sendWhatsApp(overviewData.upcomingBookings[0])}
-                      >
-                        <FaWhatsapp /> Contactar
-                      </button>
-                    </>
-                  )}
-                </div>
-              </article>
-
-              <article className="admin-card">
-                <div className="admin-card-header">
-                  <div>
-                    <span className="card-kicker">Pulso semanal</span>
-                    <h3>Movimiento de los próximos 7 días</h3>
-                    </div>
-                </div>
-                <div className="admin-bars-chart">
-                  {overviewData.weekFlow.map((item) => (
-                    <div key={item.label} className="admin-bar-column">
-                      <span className="admin-bar-value">{item.count}</span>
-                      <div className="admin-bar-track">
-                        <div
-                          className="admin-bar-fill"
-                          style={{
-                            height: `${Math.max(
-                              (item.count / Math.max(...overviewData.weekFlow.map((day) => day.count), 1)) * 100,
-                              item.count ? 14 : 4,
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="admin-bar-label">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            </section>
-
-            <section className="admin-content-grid two-columns">
-              <article className="admin-card">
-                <div className="admin-card-header">
-                  <div>
-                    <span className="card-kicker">Demanda</span>
-                    <h3>Materias más solicitadas</h3>
-                  </div>
-                </div>
-                <div className="admin-progress-list">
-                  {overviewData.topSubjects.length === 0 ? (
-                    <p className="empty-copy">Todavía no hay materias registradas.</p>
-                  ) : (
-                    overviewData.topSubjects.map((subject) => (
-                      <div key={subject.label} className="progress-row">
-                        <div className="progress-copy">
-                          <strong>{subject.label}</strong>
-                          <span>{subject.count} reservas</span>
-                        </div>
-                        <div className="progress-track">
-                          <div
-                            className="progress-fill"
-                            style={{
-                              width: `${(subject.count / (overviewData.topSubjects[0]?.count || 1)) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </article>
-            </section>
-
-            <section className="admin-content-grid three-columns">
-              <article className="admin-card">
-                <div className="admin-card-header">
-                  <div>
-                    <span className="card-kicker">Prioridades</span>
-                    <h3>Qué requiere tu atención</h3>
-                  </div>
-                </div>
-                <div className="admin-priority-stack">
-                  <div className="priority-card warning">
-                    <strong>Reservas confirmadas</strong>
-                    <span>{dashboard.stats.confirmed}</span>
-                    <p>Aquí ves el volumen real de la agenda activa, sin depender de confirmaciones manuales.</p>
-                  </div>
-                  <div className="priority-card info">
-                    <strong>Clases para hoy</strong>
-                    <span>{overviewData.todayBookings.length}</span>
-                    <p>Tu agenda diaria ya está resumida para abrir el panel y saber dónde estás parado.</p>
-                  </div>
-                  <div className="priority-card success">
-                    <strong>Seguimiento pedagógico</strong>
-                    <span>{overviewData.students.length}</span>
-                    <p>Perfiles, materias y próximos encuentros listos para preparar cada clase con contexto.</p>
-                  </div>
-                </div>
-              </article>
-
-              <article className="admin-card">
-                <div className="admin-card-header">
-                  <div>
-                    <span className="card-kicker">Agenda de hoy</span>
-                    <h3>Turnos del día</h3>
-                  </div>
-                </div>
-                <div className="admin-agenda-list">
-                  {overviewData.todayBookings.length === 0 ? (
-                    <p className="empty-copy">Hoy no hay clases activas cargadas.</p>
-                  ) : (
-                    overviewData.todayBookings.map((booking) => (
-                      <button key={booking._id} type="button" className="agenda-item" onClick={() => setViewBooking(booking)}>
-                        <div>
-                          <strong>{booking.studentName}</strong>
-                          <span>{booking.subject}</span>
-                        </div>
-                        <div className="agenda-time">
-                          <span>{booking.start ? formatTime(booking.start) : "--:--"}</span>
-                          <small>{booking.duration || 1} h</small>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </article>
-
-              <article className="admin-card">
-                <div className="admin-card-header">
-                  <div>
-                    <span className="card-kicker">Actividad reciente</span>
-                  <h3>Últimos movimientos</h3>
-                  </div>
-                </div>
-                <div className="admin-activity-list">
-                  {overviewData.recentActivity.length === 0 ? (
-                    <p className="empty-copy">Todavía no hay actividad para mostrar.</p>
-                  ) : (
-                    overviewData.recentActivity.map((booking) => (
-                      <button key={booking._id} type="button" className="activity-item" onClick={() => setViewBooking(booking)}>
-                        <div className="activity-copy">
-                          <strong>{booking.studentName}</strong>
-                          <span>{booking.subject} · {bookingStatusLabel(booking.status)}</span>
-                        </div>
-                        <small>{booking.start ? `${formatShortDate(booking.start)} ${formatTime(booking.start)}` : "--"}</small>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </article>
-            </section>
-          </>
+          <OverviewView
+            overviewData={overviewData}
+            dashboard={dashboard}
+            onSelectBooking={setViewBooking}
+            onSendWhatsApp={sendWhatsApp}
+            onQuickStatusChange={handleQuickStatusChange}
+          />
         )}
 
         {activeView === "agenda" && (
-          <section className="admin-content-grid two-columns">
-            <article className="admin-card">
-              <div className="admin-card-header">
-                <div>
-                  <span className="card-kicker">Próximas 24 horas</span>
-                  <h3>Seguimiento inmediato</h3>
-                </div>
-              </div>
-              <div className="timeline-list">
-                {overviewData.upcoming24h.length === 0 ? (
-                  <p className="empty-copy">No hay clases ni recordatorios urgentes en las próximas 24 horas.</p>
-                ) : (
-                  overviewData.upcoming24h.map((booking) => (
-                    <div key={booking._id} className="timeline-item">
-                      <div className="timeline-copy">
-                        <strong>{booking.studentName}</strong>
-                        <span>{booking.start ? `${formatDate(booking.start)} · ${formatTime(booking.start)} hs` : "--"}</span>
-                        <small>{booking.subject}</small>
-                      </div>
-                      <button type="button" className="inline-action" onClick={() => sendWhatsApp(booking)}>
-                        <FaWhatsapp />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </article>
-
-            <article className="admin-card">
-              <div className="admin-card-header">
-                <div>
-                  <span className="card-kicker">Estados heredados</span>
-                  <h3>Registros para normalizar</h3>
-                </div>
-              </div>
-              <div className="timeline-list">
-                {overviewData.overduePending.length === 0 ? (
-                  <p className="empty-copy">No hay registros pendientes heredados.</p>
-                ) : (
-                  overviewData.overduePending.map((booking) => (
-                    <div key={booking._id} className="timeline-item urgent">
-                      <div className="timeline-copy">
-                        <strong>{booking.studentName}</strong>
-                        <span>{booking.start ? `${formatShortDate(booking.start)} · ${formatTime(booking.start)} hs` : "--"}</span>
-                        <small>{booking.subject}</small>
-                      </div>
-                      <div className="timeline-actions">
-                        <button type="button" className="inline-action success" onClick={() => handleQuickStatusChange(booking._id, "Confirmado")}>
-                          <FaCheckCircle />
-                        </button>
-                        <button type="button" className="inline-action danger" onClick={() => handleQuickStatusChange(booking._id, "Cancelado")}>
-                          <FaTrashAlt />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </article>
-          </section>
+          <AgendaView
+            overviewData={overviewData}
+            onSendWhatsApp={sendWhatsApp}
+            onQuickStatusChange={handleQuickStatusChange}
+          />
         )}
 
         {activeView === "students" && (
-          <section className="admin-card">
-            <div className="admin-card-header">
-              <div>
-                <span className="card-kicker">Registro</span>
-                <h3>Seguimiento de alumnos y responsables</h3>
-              </div>
-            </div>
-            <div className="students-grid">
-              {filteredStudents.length === 0 ? (
-                  <p className="empty-copy">No hay alumnos que coincidan con la búsqueda actual.</p>
-              ) : (
-                filteredStudents.map((student) => (
-                  <article key={student.key} className="student-card">
-                    <div className="student-card-top">
-                      <div>
-                        <strong>{student.studentName}</strong>
-                        <span>{student.responsibleSummary}</span>
-                      </div>
-                      <span className="student-metric">{student.totalBookings} turnos</span>
-                    </div>
-                    <div className="student-meta-list">
-                      <div><FaIdCard /><span>{student.responsibleRelationship || "Vínculo sin cargar"}</span></div>
-                      <div><FaSchool /><span>{student.school || "Institución sin cargar"}</span></div>
-                      <div><FaLayerGroup /><span>{student.educationLevel || "Nivel"} · {student.yearGrade || "Año"}</span></div>
-                      <div><FaBookOpen /><span>{student.subjects.join(", ") || "Materia sin definir"}</span></div>
-                      <div><FaCalendarAlt /><span>{student.nextBooking ? `Próximo: ${formatShortDate(student.nextBooking)} ${formatTime(student.nextBooking)} hs` : "Sin próximo turno"}</span></div>
-                    </div>
-                    <div className="student-card-footer">
-                      <div>
-                        <small>Próximo paso</small>
-                        <strong>{student.nextBooking ? "Preparar clase" : "Sin turno"}</strong>
-                      </div>
-                      <button
-                        type="button"
-                        className="inline-link-btn"
-                        onClick={() => {
-                          const match = sortedBookings.find((booking) => studentKey(booking) === student.key);
-                          if (match) setViewBooking(match);
-                        }}
-                      >
-                        Ver ficha
-                      </button>
-                    </div>
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
+          <StudentsView
+            filteredStudents={filteredStudents}
+            sortedBookings={sortedBookings}
+            onSelectBooking={setViewBooking}
+          />
         )}
 
         {activeView === "bookings" && (
-          <section className="admin-card">
-            <div className="admin-card-header spread">
-              <div>
-                <span className="card-kicker">Gestor</span>
-                <h3>Control detallado de turnos</h3>
-              </div>
-            </div>
-
-            <div className="admin-toolbar">
-              <label className="admin-search-box">
-                <FaSearch />
-                <input
-                  type="text"
-                  placeholder="Buscar alumno, código, responsable, parentesco o contacto..."
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                />
-              </label>
-              <div className="status-filter-row">
-                <span><FaFilter /> Filtrar</span>
-                {STATUS_FILTERS.map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className={`status-filter-chip ${filterStatus === status ? "is-active" : ""}`}
-                    onClick={() => setFilterStatus(status)}
-                  >
-                    {status}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {dataLoading ? (
-              <div className="admin-loading-state">
-                <FaSpinner className="spinner giant" />
-                <p>Sincronizando turnos...</p>
-              </div>
-            ) : (
-              <div className="admin-table-shell">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Estado</th>
-                      <th>Código</th>
-                      <th>Alumno</th>
-                      <th>Horario</th>
-                      <th>Contacto</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBookings.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="empty-table-state">No se encontraron reservas con esos filtros.</td>
-                      </tr>
-                    ) : (
-                      filteredBookings.map((booking) => (
-                        <tr key={booking._id} className={booking.status === "Cancelado" ? "row-cancelled" : ""}>
-                          <td><span className={`status-pill ${bookingStatusLabel(booking.status)}`}>{bookingStatusLabel(booking.status)}</span></td>
-                          <td><span className="code-mono">{booking.bookingCode}</span></td>
-                          <td><div className="table-student"><strong>{booking.studentName}</strong><span>{responsibleRelationshipLabel(booking)} · {booking.subject}</span></div></td>
-                          <td><div className="table-date"><span><FaCalendarAlt />{booking.timeSlot ? formatShortDate(toDate(booking.timeSlot)) : "--"}</span><span><FaRegClock />{booking.timeSlot ? `${formatTime(toDate(booking.timeSlot))} hs` : "--"}</span></div></td>
-                          <td>
-                            <button type="button" onClick={() => sendWhatsApp(booking)} className={`admin-whatsapp-btn ${sentMessages[booking._id] ? "sent" : ""}`}>
-                              <FaWhatsapp />
-                              {sentMessages[booking._id] ? "Enviado" : "WhatsApp"}
-                            </button>
-                          </td>
-                          <td>
-                            <div className="table-actions">
-                              {booking.status === "Pendiente" && (
-                                <button type="button" className="icon-action success" title="Confirmar" onClick={() => handleQuickStatusChange(booking._id, "Confirmado")}>
-                                  <FaCheckCircle />
-                                </button>
-                              )}
-                              <button type="button" className="icon-action neutral" title="Ver ficha" onClick={() => setViewBooking(booking)}><FaEye /></button>
-                              <button type="button" className="icon-action info" title="Editar" onClick={() => { setSelectedBooking(booking); setEditNotes(booking.notes || ""); setEditEvolution(booking.studentEvolution || ""); setEditEmotionalState(booking.emotionalState || ""); }}><FaEdit /></button>
-                              <button type="button" className="icon-action danger" title="Eliminar" onClick={() => handleDelete(booking._id)}><FaTrashAlt /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {bookings.length > 0 && (
-              <div className="admin-danger-zone">
-                <div>
-                  <strong>Zona de resguardo</strong>
-                  <p>Usá esta acción solo para limpiar datos de prueba. No afecta la navegación ni la agenda hasta que confirmes dos veces.</p>
-                </div>
-                <button type="button" className="admin-danger-btn" onClick={handleDeleteAll} disabled={dataLoading}>
-                  <FaTrashAlt />
-                  Limpiar base de prueba
-                </button>
-              </div>
-            )}
-          </section>
+          <BookingsView
+            searchTerm={searchTerm}
+            filterStatus={filterStatus}
+            filteredBookings={filteredBookings}
+            bookings={bookings}
+            sentMessages={sentMessages}
+            dataLoading={dataLoading}
+            onSearchTermChange={setSearchTerm}
+            onFilterStatusChange={setFilterStatus}
+            onSendWhatsApp={sendWhatsApp}
+            onSelectBooking={setViewBooking}
+            onEditBooking={openEditBooking}
+            onDeleteBooking={handleDelete}
+            onDeleteAll={handleDeleteAll}
+            onQuickStatusChange={handleQuickStatusChange}
+          />
         )}
       </main>
 
