@@ -10,6 +10,13 @@
   padding: 2rem;
 }
 
+.admin-login-shell--minimal {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(88, 152, 96, 0.10), transparent 55%),
+    radial-gradient(circle at 86% 88%, rgba(32, 64, 96, 0.10), transparent 60%),
+    var(--surface-3, var(--color-bg-light));
+}
+
 .admin-login-card {
   width: min(100%, 460px);
   padding: 2rem;
@@ -17,6 +24,78 @@
   background: var(--color-white);
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-card);
+}
+
+.admin-login-card--centered {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  padding: 2.4rem 2rem;
+  width: min(100%, 420px);
+}
+
+.admin-login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.4rem;
+}
+
+.admin-login-logo {
+  width: 78px;
+  height: 78px;
+  object-fit: contain;
+  margin-bottom: 0.4rem;
+  filter: drop-shadow(0 8px 20px rgba(15, 23, 42, 0.10));
+}
+
+[data-theme="dark"] .admin-login-logo {
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
+}
+
+.admin-login-card--centered h2 {
+  margin: 0.2rem 0 0.3rem;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+}
+
+.admin-login-subtitle {
+  margin: 0;
+  color: var(--text-secondary, var(--color-text-secondary));
+  font-size: 0.95rem;
+}
+
+.admin-login-foot {
+  margin: 1.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-tertiary, var(--color-text-soft));
+  text-align: center;
+  line-height: 1.5;
+}
+
+.admin-primary-btn {
+  margin-top: 1.2rem;
+}
+
+.admin-primary-btn svg {
+  margin-right: 0.4rem;
+}
+
+.admin-brand-badge--logo {
+  background: #ffffff;
+  padding: 6px;
+  border: 1px solid var(--border-soft);
+}
+.admin-brand-badge--logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+[data-theme="dark"] .admin-brand-badge--logo {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-strong);
 }
 
 .admin-login-mark,

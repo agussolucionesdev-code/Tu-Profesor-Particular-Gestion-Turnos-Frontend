@@ -1,0 +1,136 @@
+/*
+ * final-polish.css — capa de pulido final.
+ * Se carga al final para corregir contrastes, zoom del calendario,
+ * estados de input, y firmar el modo oscuro/claro con los nuevos tokens.
+ */
+
+/* === Calendar: normalizar zoom y tipografía dentro del datepicker === */
+.react-datepicker,
+.react-datepicker__month-container,
+.react-datepicker-popper {
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+
+.react-datepicker__current-month {
+  font-size: 1.05rem !important;
+  letter-spacing: -0.01em !important;
+}
+
+.react-datepicker__day-name {
+  font-size: 0.72rem !important;
+}
+
+.react-datepicker__day {
+  font-size: 0.92rem !important;
+}
+
+/* Refuerzo de contraste mes/año en oscuro */
+[data-theme="dark"] .react-datepicker__current-month {
+  color: var(--text-primary) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .react-datepicker__day-name {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .react-datepicker__day {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .react-datepicker__day--disabled {
+  color: rgba(180, 195, 215, 0.35) !important;
+}
+
+/* === Inputs unificados: estados consistentes === */
+.admin-input:focus,
+.search-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--brand-green) !important;
+  box-shadow: 0 0 0 3px var(--focus-ring-color, rgba(88, 152, 96, 0.4)) !important;
+}
+
+/* === Botón "scroll-to-top" del Footer: visible en ambos temas === */
+.btn-up-floating {
+  background: var(--brand-navy);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .btn-up-floating {
+  background: var(--brand-green);
+  color: var(--text-on-accent, #06140a);
+}
+
+/* === Toast/notification overlays: que respeten contraste === */
+[data-theme="dark"] .neuro-toast,
+[data-theme="dark"] .portal-toast {
+  background: var(--surface-1) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+}
+
+/* === Accesibilidad: focus ring siempre visible en links === */
+a:focus-visible {
+  outline: 3px solid var(--focus-ring-color, rgba(88, 152, 96, 0.4));
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* === Modal overlays: usar token semántico === */
+.neuro-modal-overlay {
+  background: var(--surface-overlay, rgba(15, 23, 42, 0.55));
+}
+
+/* === Reducir el tamaño visual gigante de algunos textos === */
+@media (max-width: 480px) {
+  .react-datepicker__current-month {
+    font-size: 0.95rem !important;
+  }
+  .react-datepicker__day,
+  .react-datepicker__day-name {
+    width: 34px !important;
+    height: 34px !important;
+    line-height: 34px !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* === Hint de voz: aire entre badge y resto === */
+.voice-hint-bubble {
+  animation: tpp-voice-hint-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes tpp-voice-hint-pulse {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-hint-bubble {
+    animation: none;
+  }
+}
+
+/* === Indicador "audio disponible en este paso" === */
+.step-voice-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(88, 152, 96, 0.12);
+  color: var(--brand-green-deep, #4a8452);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+[data-theme="dark"] .step-voice-indicator {
+  background: rgba(114, 176, 122, 0.18);
+  color: #9fd0a4;
+}

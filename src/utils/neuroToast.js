@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const VOICE_STORAGE_KEY = "muted_alerts";
 const VOICE_READY_EVENT = "neuro-voice-ready";
 const VOICE_MUTED_EVENT = "neuro-voice-muted-changed";
+const VOICE_BLOCKED_EVENT = "neuro-voice-blocked";
 
 const DEFAULT_TOAST_STATE = {
   show: false,
@@ -54,14 +55,8 @@ const resolvePreferredVoice = (speechApi) => {
   );
 };
 
-const speakNow = (text, options = {}) => {
-  const speechApi = getSpeechApi();
-  if (!speechApi) return false;
-
-  const message = String(text ?? "").trim();
-  if (!message) return false;
-
-  const utterance = new SpeechSynthesisUtterance(message);
+const buildUtterance = (speechApi, text, options = {}) => {
+  const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = options.lang || "es-AR";
   utterance.rate = options.rate ?? 0.86;
   utterance.pitch = options.pitch ?? 0.98;
@@ -72,17 +67,41 @@ const speakNow = (text, options = {}) => {
     utterance.voice = preferredVoice;
   }
 
-  speechApi.cancel();
-  speechApi.speak(utterance);
-  return true;
+  utterance.onerror = (event) => {
+    const reason = event?.error || "unknown";
+    if (reason === "not-allowed" || reason === "blocked") {
+      voicePrimed = false;
+      dispatchVoiceEvent(VOICE_BLOCKED_EVENT, { reason });
+    }
+  };
+
+  return utterance;
+};
+
+const speakNow = (text, options = {}) => {
+  const speechApi = getSpeechApi();
+  if (!speechApi) return false;
+
+  const message = String(text ?? "").trim();
+  if (!message) return false;
+
+  const utterance = buildUtterance(speechApi, message, options);
+
+  try {
+    speechApi.cancel();
+    speechApi.speak(utterance);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const removeUnlockListeners = () => {
   if (typeof window === "undefined" || !unlockHandler) return;
 
-  window.removeEventListener("pointerdown", unlockHandler, true);
-  window.removeEventListener("keydown", unlockHandler, true);
-  window.removeEventListener("touchstart", unlockHandler, true);
+  window.removeEventListener("pointerdown", unlockHandler);
+  window.removeEventListener("keydown", unlockHandler);
+  window.removeEventListener("touchstart", unlockHandler);
   unlockHandler = null;
   unlockListenersBound = false;
 };
@@ -123,7 +142,9 @@ export const setVoiceMuted = (muted) => {
 
   if (muted) {
     pendingSpeech = null;
+    voicePrimed = false;
     getSpeechApi()?.cancel();
+    removeUnlockListeners();
   } else {
     bootNeuroVoice();
   }
@@ -201,39 +222,59 @@ export const primeVoicePlayback = (options = {}) => {
   const speechApi = getSpeechApi();
   if (!speechApi || isVoiceMuted()) return false;
 
-  if (voicePrimed && !options.message) {
+  // Si ya estamos cebados, hablar directamente (o flushear cola pendiente).
+  if (voicePrimed) {
+    if (options.message) {
+      return speakNow(options.message, options.voiceOptions || {});
+    }
+    flushPendingSpeech();
     return true;
   }
 
-  const primeUtterance = new SpeechSynthesisUtterance(".");
-  primeUtterance.lang = options.lang || "es-AR";
-  primeUtterance.volume = 0.01;
-  primeUtterance.rate = 1;
-  primeUtterance.pitch = 1;
+  // No cebado: hay que correr todo DENTRO del mismo tick del user-gesture
+  // para que el navegador no bloquee. Nada de setTimeout.
+  const seedUtterance = new SpeechSynthesisUtterance(" ");
+  seedUtterance.lang = options.lang || "es-AR";
+  seedUtterance.volume = 0.01;
+  seedUtterance.rate = 1;
+  seedUtterance.pitch = 1;
 
   const preferredVoice = resolvePreferredVoice(speechApi);
   if (preferredVoice) {
-    primeUtterance.voice = preferredVoice;
+    seedUtterance.voice = preferredVoice;
   }
 
+  seedUtterance.onend = () => {
+    dispatchVoiceEvent(VOICE_READY_EVENT, { primed: true });
+  };
+
+  seedUtterance.onerror = (event) => {
+    const reason = event?.error || "unknown";
+    if (reason === "not-allowed" || reason === "blocked") {
+      voicePrimed = false;
+      dispatchVoiceEvent(VOICE_BLOCKED_EVENT, { reason });
+    }
+  };
+
   try {
-    speechApi.cancel();
-    speechApi.speak(primeUtterance);
+    speechApi.speak(seedUtterance);
+
+    if (options.message) {
+      const messageUtterance = buildUtterance(
+        speechApi,
+        String(options.message).trim(),
+        options.voiceOptions || {},
+      );
+      speechApi.speak(messageUtterance);
+    } else if (pendingSpeech) {
+      const { message, options: pendingOptions } = pendingSpeech;
+      pendingSpeech = null;
+      const pendingUtterance = buildUtterance(speechApi, message, pendingOptions);
+      speechApi.speak(pendingUtterance);
+    }
+
     voicePrimed = true;
     removeUnlockListeners();
-    dispatchVoiceEvent(VOICE_READY_EVENT, { primed: true });
-
-    window.setTimeout(() => {
-      speechApi.cancel();
-
-      if (options.message) {
-        speakNow(options.message, options.voiceOptions || {});
-        return;
-      }
-
-      flushPendingSpeech();
-    }, 45);
-
     return true;
   } catch {
     return false;
@@ -246,12 +287,15 @@ const bindUnlockListeners = () => {
   }
 
   unlockHandler = () => {
+    // El handler se autorremueve antes de cebar, así evitamos doble-disparo
+    // desde otros listeners que también capturen el mismo evento.
+    removeUnlockListeners();
     primeVoicePlayback();
   };
 
-  window.addEventListener("pointerdown", unlockHandler, true);
-  window.addEventListener("keydown", unlockHandler, true);
-  window.addEventListener("touchstart", unlockHandler, true);
+  window.addEventListener("pointerdown", unlockHandler, { passive: true });
+  window.addEventListener("keydown", unlockHandler);
+  window.addEventListener("touchstart", unlockHandler, { passive: true });
   unlockListenersBound = true;
 };
 

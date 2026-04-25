@@ -1,11 +1,5 @@
-import {
-  FaCalendarCheck,
-  FaInfoCircle,
-  FaLock,
-  FaSpinner,
-  FaUsers,
-  FaWhatsapp,
-} from "react-icons/fa";
+import { FaLock, FaSpinner } from "react-icons/fa";
+import logoIcon from "../../assets/images/logo-icon-sin-fondo.png";
 
 const AdminLoginScreen = ({
   username,
@@ -16,90 +10,65 @@ const AdminLoginScreen = ({
   onLogin,
 }) => {
   return (
-    <div className="admin-login-shell">
-      <div className="admin-login-layout">
-        <section className="admin-login-intro" aria-label="Beneficios del panel">
-          <span className="admin-login-kicker">Gestión interna</span>
-          <h1>Un panel claro para decidir rápido y sin ruido</h1>
-          <p>
-            La idea es que, apenas entres, tengas agenda, alumnos y seguimiento
-            en una interfaz legible, ordenada y fácil de recorrer incluso en
-            jornadas largas.
-          </p>
-
-          <div className="admin-login-benefits">
-            <article className="admin-login-benefit">
-              <FaCalendarCheck />
-              <strong>Agenda del día visible</strong>
-              <p>Prioriza lo urgente y te deja ver rápido las próximas clases.</p>
-            </article>
-
-            <article className="admin-login-benefit">
-              <FaUsers />
-              <strong>Seguimiento por alumno</strong>
-              <p>Encontrás responsables, historial y contexto sin perder foco.</p>
-            </article>
-
-            <article className="admin-login-benefit">
-              <FaWhatsapp />
-              <strong>Mensajes y acción rápida</strong>
-              <p>
-                Contactás y actualizás estados desde el mismo flujo de trabajo.
-              </p>
-            </article>
-          </div>
-
-          <div className="admin-login-trust">
-            <FaInfoCircle />
-            <p>
-              Este acceso queda pensado solo para la gestión del profesor, con
-              lectura reforzada, buen contraste y una jerarquía visual más
-              descansada.
-            </p>
-          </div>
-        </section>
-
-        <div className="admin-login-card">
-          <div className="admin-login-mark">
-            <FaLock />
-          </div>
+    <div className="admin-login-shell admin-login-shell--minimal">
+      <div className="admin-login-card admin-login-card--centered">
+        <div className="admin-login-brand">
+          <img
+            src={logoIcon}
+            alt="Tu Profesor Particular"
+            className="admin-login-logo"
+          />
           <span className="admin-login-eyebrow">Panel del profesor</span>
-          <h2>Entrar al centro de control</h2>
-          <p>
-            Gestioná turnos, agenda, alumnos y seguimiento desde un solo lugar.
+          <h2>Acceso privado</h2>
+          <p className="admin-login-subtitle">
+            Bienvenido, Agustín. Ingresá tus credenciales.
           </p>
-
-          <label className="admin-field">
-            <span>Usuario</span>
-            <input
-              className="admin-input"
-              type="text"
-              placeholder="Correo de acceso"
-              value={username}
-              onChange={onUsernameChange}
-            />
-          </label>
-
-          <label className="admin-field">
-            <span>Contraseña</span>
-            <input
-              className="admin-input"
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={onPasswordChange}
-              onKeyDown={(event) => event.key === "Enter" && onLogin()}
-            />
-          </label>
-
-          <button
-            className="admin-primary-btn"
-            onClick={onLogin}
-            disabled={loading}
-          >
-            {loading ? <FaSpinner className="spinner" /> : "Ingresar"}
-          </button>
         </div>
+
+        <label className="admin-field">
+          <span>Usuario</span>
+          <input
+            className="admin-input"
+            type="text"
+            placeholder="Usuario"
+            value={username}
+            onChange={onUsernameChange}
+            autoComplete="username"
+            autoFocus
+          />
+        </label>
+
+        <label className="admin-field">
+          <span>Contraseña</span>
+          <input
+            className="admin-input"
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={onPasswordChange}
+            onKeyDown={(event) => event.key === "Enter" && onLogin()}
+            autoComplete="current-password"
+          />
+        </label>
+
+        <button
+          className="admin-primary-btn"
+          onClick={onLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <FaSpinner className="spinner" />
+          ) : (
+            <>
+              <FaLock /> Ingresar
+            </>
+          )}
+        </button>
+
+        <p className="admin-login-foot">
+          Esta sección es privada. Solo el profesor accede a los datos de los
+          alumnos y la agenda.
+        </p>
       </div>
     </div>
   );

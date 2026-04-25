@@ -4,9 +4,9 @@
   --font-size-eyebrow: 0.82rem;
   --font-size-label: 0.98rem;
   --line-height-reading: 1.65;
-  /* --- Paleta de Marca AgustÃ­n Sosa --- */
+  /* --- Paleta de Marca Agustín Sosa --- */
 
-  /* Azul Noche (Base SÃ³lida y Autoridad) */
+  /* Azul Noche (Base Sólida y Autoridad) */
   --brand-navy: #204060;
   --brand-navy-deep: #183858;
   --brand-navy-soft: #2b5478;
@@ -16,7 +16,7 @@
   --color-primary: var(--brand-navy);
   --color-primary-dark: var(--brand-navy-deep);
 
-  /* Verde Ã‰xito (Check, Estrellas y Acciones) */
+  /* Verde Éxito (Check, Estrellas y Acciones) */
   --color-accent: var(--brand-green);
   --color-accent-hover: var(--brand-green-deep);
 
@@ -29,9 +29,19 @@
   --color-text-soft: #94A3B8; /* Slate-400 */
   --color-white: #ffffff;
 
-  /* --- Efectos y Sombras (Sutiles y Difusas) --- */
+  /* --- Tokens semánticos de superficie (consistencia entre temas) --- */
+  --surface-1: #ffffff;          /* Tarjetas y modales (más alto) */
+  --surface-2: #f7fafd;          /* Áreas internas (medio) */
+  --surface-3: #eef3f9;          /* Fondo de página (más bajo) */
+  --surface-overlay: rgba(15, 23, 42, 0.55);
+  --text-primary: #0d2238;
+  --text-secondary: #4a627d;
+  --text-tertiary: #7791ac;
+  --text-on-accent: #ffffff;
+  --border-subtle: rgba(15, 23, 42, 0.08);
   --border-soft: rgba(15, 23, 42, 0.08);
   --border-strong: rgba(15, 23, 42, 0.15);
+  --focus-ring-color: rgba(88, 152, 96, 0.45);
   --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.04);
   --shadow-elevated: 0 20px 50px rgba(15, 23, 42, 0.08);
   --shadow-solid: 0 4px 0 0 rgba(15, 23, 42, 0.05);
@@ -59,18 +69,30 @@
   --color-primary-dark: #CBD5E1;
   --color-accent: #72B07A;
   --color-accent-hover: #8BC392;
-  --color-bg-light: #0F172A; /* Slate-900 */
-  --color-surface-soft: #1E293B; /* Slate-800 */
-  --color-surface-muted: #0F172A;
-  --color-text-main: #F8FAFC; /* Slate-50 */
-  --color-text-muted: #94A3B8; /* Slate-400 */
-  --color-text-soft: #64748B; /* Slate-500 */
-  --color-white: #1E293B;
-  --border-soft: rgba(248, 250, 252, 0.08);
-  --border-strong: rgba(248, 250, 252, 0.15);
-  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 20px 50px rgba(0, 0, 0, 0.4);
-  --shadow-solid: 0 4px 0 0 rgba(0, 0, 0, 0.2);
+  --color-bg-light: #0B1424; /* Más profundo que slate-900 para mayor contraste */
+  --color-surface-soft: #16243A; /* Tarjetas elevadas */
+  --color-surface-muted: #0F1B2E;
+  --color-text-main: #F1F5F9; /* Slate-100 — texto primario */
+  --color-text-muted: #B5C2D2; /* Subido de #94A3B8 para mejor contraste WCAG */
+  --color-text-soft: #8AA0B8;  /* Subido de #64748B */
+  --color-white: #16243A;
+
+  /* --- Tokens semánticos de superficie en oscuro --- */
+  --surface-1: #16243A;
+  --surface-2: #0F1B2E;
+  --surface-3: #0B1424;
+  --surface-overlay: rgba(2, 6, 16, 0.7);
+  --text-primary: #F1F5F9;
+  --text-secondary: #B5C2D2;
+  --text-tertiary: #8AA0B8;
+  --text-on-accent: #06140A;
+  --border-subtle: rgba(248, 250, 252, 0.10);
+  --border-soft: rgba(248, 250, 252, 0.10);
+  --border-strong: rgba(248, 250, 252, 0.20);
+  --focus-ring-color: rgba(114, 176, 122, 0.55);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --shadow-solid: 0 4px 0 0 rgba(0, 0, 0, 0.3);
   --scrollbar-track: #0F172A;
   --scrollbar-thumb: #334155;
   --scrollbar-thumb-hover: #475569;
